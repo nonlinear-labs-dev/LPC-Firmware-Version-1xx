@@ -205,16 +205,7 @@ void USB_MIDI_DropMessages(uint8_t drop){
 *******************************************************************************/
 void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 {
-// test only
 	static	uint8_t toggle=0;
-
-	#if 0
-	if (toggle = !toggle) // yes, this is an assignment on purpose ;-)
-		DBG_Led_Audio_Engine_On();
-	else
-		DBG_Led_Audio_Engine_Off();
-#endif
-// end test only
 
 	if (len == 4)	// three byte msg received (actually four bytes, the first is ignored)
 	{
@@ -224,7 +215,7 @@ void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 				DBG_Led_Audio_Engine_Off();
 		else if ( (buff[1]==0xA0) && (buff[2]==0x3C) && (buff[3]==0x01) )	// midi sequence "A0 3C 01" (aftertouch) ==> Audio Engine HeartBeat
 		{
-			if (toggle = !toggle) // yes, this an assignment on purpose ;-)
+			if (toggle = !toggle) // yes, this is an assignment on purpose ;-)
 				DBG_Led_Audio_Engine_On();
 			else
 				DBG_Led_Audio_Engine_Off();
