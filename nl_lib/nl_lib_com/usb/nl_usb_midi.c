@@ -209,7 +209,7 @@ void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 	static	uint8_t toggle=0;
 
 	#if 0
-	if (toggle = !toggle) // yes, this an assignment on purpose ;-)
+	if (toggle = !toggle) // yes, this is an assignment on purpose ;-)
 		DBG_Led_Audio_Engine_On();
 	else
 		DBG_Led_Audio_Engine_Off();
