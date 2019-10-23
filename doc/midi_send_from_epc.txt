@@ -3,7 +3,7 @@ damit die hw-id von Emphase bestimmen, zB 0, dann
 
 amidi -p hw:0 -S "<hex data>", zb "90 3C 01" (== NoteOn Key Velocity)
 
-Testmodus derzeit :
+Testmodus derzeit (passiert in \nl_lib\nl_lib_com\usb\nl_usb_midi.c, line 200++
 	- "90 3C 01" (Note On) == Audio Engine ON (single) 		==> LED "LB" ON
 	- "80 3C 01" (Note Off) == Audio Engine OFF (single) 		==> LED "LB" OFF
 	- "A0 3C 01" (Aftertouch) == Audio Engine Heartbeat (single)	==> LED "LB" toggling

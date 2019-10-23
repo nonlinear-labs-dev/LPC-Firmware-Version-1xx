@@ -203,7 +203,6 @@ void USB_MIDI_DropMessages(uint8_t drop){
     @param[in]	buff	Pointer to data buffer
     @param[in]	cnt		Amount of bytes received
 *******************************************************************************/
-
 void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 {
 // test only
