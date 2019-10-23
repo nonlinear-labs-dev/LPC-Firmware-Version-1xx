@@ -1,0 +1,16 @@
+LA (green)	: GPIO2[12] "lpc_dbg_led_m0_hb"		M0 Core Heartbeat
+LB (green)	: GPIO2[12] "lpc_dbg_led_usb_ok"	USB Ok // ****DEAKTIVIERT, dient nun zur Anzeige AUDIO ENGINE****
+LC (green)	: GPIO2[12] "lpc_dbg_led_m4_hb"   	M4 Core Heartbeat
+LD (yellow)	: GPIO2[13] "lpc_dbg_led_task_ovfl"   	Task Overflow (calls to some tasks are still pending when next scheduling is due)
+LE (red)	: GPIO2[14] "lpc_dbg_led_error"		???
+
+
+Notes
+"Task Overflow" is always indicated when a preset is changed!
+
+"USB OK" is not functional_
+	- it lights up when no USB is connected at boot time, otherwise it is off
+
+"Error" is indicated when
+	- LPC to BBB transmit FIFO buffer overflows (C15_m4.c, line 108), short indication time
+	- LPC to ePC USB transmit of midi buffer overruns (nl_tcd_msg.c, line 98), long indication time

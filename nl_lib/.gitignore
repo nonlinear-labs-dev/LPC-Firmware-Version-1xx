@@ -1,0 +1,13 @@
+# Blacklist files/folders in same directory as the .gitignore file
+/*
+
+
+# Whitelist some files
+!.gitignore
+
+# Whitelist our folders we want to sync
+# trailing "/" is optional for folders, may match file though.
+# "/" is NOT optional when followed by a *
+!nl_lib_com/
+!nl_lib_m0_2/
+!nl_lib_m4_2/
