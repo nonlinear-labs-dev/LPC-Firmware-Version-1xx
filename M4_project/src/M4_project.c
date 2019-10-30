@@ -10,12 +10,10 @@
 #include "sys/nl_coos.h"
 #include "sys/delays.h"
 
-#ifdef C15_VERSION_4
-	#include "boards/emphase_v4.h"
-#elif defined C15_VERSION_5
+#ifdef C15_VERSION_5
 	#include "boards/emphase_v5.h"
 #else
-	#error "No version defined."
+	#error "Incorrect version defined. Only C15_VERSION_5 is supported at the moment"
 #endif
 
 
@@ -38,6 +36,7 @@
 #include "tcd/nl_tcd_expon.h"
 #include "tcd/nl_tcd_param_work.h"
 #include "tcd/nl_tcd_msg.h"
+#include "sup/nl_sup.h"
 
 
 volatile uint8_t  waitForFirstSysTick = 1;
@@ -126,6 +125,8 @@ void Init(void)
 	#error "No version defined."
 #endif
 
+	/* supervisor */
+	SUP_Init();
 
     /* system */
     Emphase_IPC_M4_Init();
@@ -136,8 +137,7 @@ void Init(void)
 	DBG_Led_Error_Off();
     DBG_Led_Cpu_Off();
     DBG_Led_Warning_Off();
-    DBG_Led_Audio_Engine_Off();
-    DBG_Led_Usb_On();
+    DBG_Led_Audio_Off();
     DBG_Pod_0_Off();
     DBG_Pod_1_Off();
     DBG_Pod_2_Off();
@@ -158,8 +158,8 @@ void Init(void)
 		timeOut--;
 	}	while ((!USB_MIDI_IsConfigured()) && (timeOut > 0));
 
-	if (USB_MIDI_IsConfigured() == TRUE)
-		DBG_Led_Usb_Off();
+//	if (USB_MIDI_IsConfigured() == TRUE)
+//		DBG_Led_Usb_Off();
 
     /* lpc bbb communication */
 	SPI_BB_Init(BB_MSG_ReceiveCallback);
@@ -188,6 +188,7 @@ void Init(void)
 
     COOS_Task_Add(MSG_CheckUSB,		105, 1600);	// every 200 ms, checking if the USB connection to the ePC or the ePC is still working
     COOS_Task_Add(DBG_Process,      95, 4800);	// every 600 ms
+    COOS_Task_Add(SUP_Process,      55, SUP_PROCCESS_TIMESLICE*8);
 
     /* M0 */
     CPU_M0_Init();

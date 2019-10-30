@@ -136,22 +136,13 @@ void DBG_Led_Cpu_Off(void)
 	NL_GPIO_Clr(pins->led_cpu);
 }
 
-void DBG_Led_Usb_On(void)
+void DBG_Led_Audio_On(void)
 {
-//	NL_GPIO_Set(pins->led_usb);
+	NL_GPIO_Set(pins->led_audio);
 }
-void DBG_Led_Usb_Off(void)
+void DBG_Led_Audio_Off(void)
 {
-//	NL_GPIO_Clr(pins->led_usb);
-}
-
-void DBG_Led_Audio_Engine_On(void)
-{
-	NL_GPIO_Set(pins->led_audio_engine);
-}
-void DBG_Led_Audio_Engine_Off(void)
-{
-	NL_GPIO_Clr(pins->led_audio_engine);
+	NL_GPIO_Clr(pins->led_audio);
 }
 
 void DBG_Pod_0_On(void)

@@ -50,22 +50,11 @@ static uint8_t midiUSBConfigured = 0;
 
 void MSG_CheckUSB(void)			// every 200 ms
 {
-
-// TEST ONLY
-#if 0
-	static uint8_t	toggle = 0;
-	if (toggle = !toggle)
-		DBG_Led_Audio_Engine_On();
-	else
-		DBG_Led_Audio_Engine_Off();
-#endif
-// END TEST ONLY
-
-	if (USB_MIDI_IsConfigured())
+    if (USB_MIDI_IsConfigured())
     {
 	    if (midiUSBConfigured == 0)
 		{
-			DBG_Led_Usb_Off();
+			//DBG_Led_Usb_Off();
 			USB_MIDI_DropMessages(0);
 		}
 
@@ -75,7 +64,7 @@ void MSG_CheckUSB(void)			// every 200 ms
 	{
 	    if (midiUSBConfigured == 1)
 		{
-			DBG_Led_Usb_On();
+			//DBG_Led_Usb_On();
 			USB_MIDI_DropMessages(1);
 		}
 

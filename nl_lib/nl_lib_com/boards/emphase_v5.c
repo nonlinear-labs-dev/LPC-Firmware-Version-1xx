@@ -634,9 +634,9 @@ static void InitKeybedScannerPins(void)
 	debug module
 *******************************************************************************/
 static PIN_CFG_T lpc_dbg_led_m4_hb = {
-	.pinId  		= {5,3},
+	.pinId  		= {5,2},
 	.ioType 		= PIN_TYPE_GPIO,
-	.gpioId 		= {2,12},
+	.gpioId 		= {2,11},
 	.direction		= PIN_GPIO_DIR_OUT,
 	.inputBuffer	= PIN_INBUF_OFF,
 	.glitchFilter 	= PIN_FILTER_ON,
@@ -685,23 +685,10 @@ static PIN_CFG_T lpc_dbg_led_m0_hb = {
 	.function		= 0
 };
 
-static PIN_CFG_T lpc_dbg_led_usb_ok = {
-	.pinId  		= {5,2},
+static PIN_CFG_T lpc_dbg_led_audio_ok = {
+	.pinId  		= {5,3},
 	.ioType 		= PIN_TYPE_GPIO,
-	.gpioId 		= {2,11},
-	.direction		= PIN_GPIO_DIR_OUT,
-	.inputBuffer	= PIN_INBUF_OFF,
-	.glitchFilter 	= PIN_FILTER_ON,
-	.slewRate 		= PIN_SRATE_SLOW,
-	.pullDown 		= PIN_PDN_OFF,
-	.pullUp 		= PIN_PUP_OFF,
-	.function		= 0
-};
-
-static PIN_CFG_T lpc_dbg_led_audio_engine = {
-	.pinId  		= {5,2},
-	.ioType 		= PIN_TYPE_GPIO,
-	.gpioId 		= {2,11},
+	.gpioId 		= {2,12},
 	.direction		= PIN_GPIO_DIR_OUT,
 	.inputBuffer	= PIN_INBUF_OFF,
 	.glitchFilter 	= PIN_FILTER_ON,
@@ -828,8 +815,7 @@ static DBG_PINS_T debug_pins = {
 	.led_warning	= &lpc_dbg_led_task_ovfl.gpioId,
 	.led_error 		= &lpc_dbg_led_error.gpioId,
 	.led_cpu		= &lpc_dbg_led_m0_hb.gpioId,
-	.led_usb		= &lpc_dbg_led_usb_ok.gpioId,
-	.led_audio_engine= &lpc_dbg_led_audio_engine.gpioId,
+	.led_audio		= &lpc_dbg_led_audio_ok.gpioId,
 
 	.pod[0] = &lpc_dbg_pod[0].gpioId,
 	.pod[1] = &lpc_dbg_pod[1].gpioId,
@@ -849,8 +835,7 @@ static void InitDebugPins(void)
 	PIN_Config(&lpc_dbg_led_task_ovfl);
 	PIN_Config(&lpc_dbg_led_error);
 	PIN_Config(&lpc_dbg_led_m0_hb);
-	PIN_Config(&lpc_dbg_led_usb_ok);
-	PIN_Config(&lpc_dbg_led_audio_engine);
+	PIN_Config(&lpc_dbg_led_audio_ok);
 	PIN_Config(&lpc_dbg_uart_tx);
 
 	PIN_Config(&lpc_dbg_pod[0]);

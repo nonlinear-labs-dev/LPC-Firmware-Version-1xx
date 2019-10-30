@@ -3,10 +3,9 @@
  *
  *  Created on: 21.01.2015
  *      Author: ssc
- *  last changed: 2019-10-32  KSTR
+ *	last changed: 2019-10-32  KSTR
  *	- SW_VERSION  102
- * 
- */
+ * */
 
 #ifndef NL_DRV_NL_BB_MSG_H_
 #define NL_DRV_NL_BB_MSG_H_

@@ -35,7 +35,7 @@
 #include "usb/nl_usb_core.h"
 
 #include "cmsis/LPC43xx.h"
-#include "drv/nl_dbg.h"
+#include "sup/nl_sup.h"
 
 static uint32_t endOfBuffer = 0;
 
@@ -197,28 +197,7 @@ void USB_MIDI_DropMessages(uint8_t drop){
 	midiDropMessages = drop;
 }
 
-
-/******************************************************************************/
-/** @brief		Receive midi buffer (toggle LED atm)
-    @param[in]	buff	Pointer to data buffer
-    @param[in]	cnt		Amount of bytes received
-*******************************************************************************/
 void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 {
-	static	uint8_t toggle=0;
-
-	if (len == 4)	// three byte msg received (actually four bytes, the first is ignored)
-	{
-		if ( (buff[1]==0x90) && (buff[2]==0x3C) && (buff[3]==0x01) )	// midi sequence "90 3C 01" (note on) ==> Audio Engine ON
-				DBG_Led_Audio_Engine_On();
-		else if ( (buff[1]==0x80) && (buff[2]==0x3C) && (buff[3]==0x01) )	// midi sequence "80 3C 01" (note off) ==> Audio Engine OFF
-				DBG_Led_Audio_Engine_Off();
-		else if ( (buff[1]==0xA0) && (buff[2]==0x3C) && (buff[3]==0x01) )	// midi sequence "A0 3C 01" (aftertouch) ==> Audio Engine HeartBeat
-		{
-			if (toggle = !toggle) // yes, this is an assignment on purpose ;-)
-				DBG_Led_Audio_Engine_On();
-			else
-				DBG_Led_Audio_Engine_Off();
-		}
-	}
+	SUP_MidiTrafficDetected();
 }

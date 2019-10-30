@@ -20,8 +20,7 @@
 typedef struct {
 	GPIO_NAME_T* pod[8];
 	GPIO_NAME_T* led_cpu;
-	GPIO_NAME_T* led_audio_engine;
-	GPIO_NAME_T* led_usb;
+	GPIO_NAME_T* led_audio;
 	GPIO_NAME_T* led_error;
 	GPIO_NAME_T* led_warning;
 	GPIO_NAME_T* led_heartbeat;
@@ -40,15 +39,12 @@ void DBG_Led(GPIO_NAME_T* led, uint8_t state);
 void DBG_Led_Error_On(void);
 void DBG_Led_Warning_On(void);
 void DBG_Led_Cpu_On(void);
-void DBG_Led_Usb_On(void);
+void DBG_Led_Audio_On(void);
 
 void DBG_Led_Error_Off(void);
 void DBG_Led_Warning_Off(void);
 void DBG_Led_Cpu_Off(void);
-void DBG_Led_Usb_Off(void);
-
-void DBG_Led_Audio_Engine_On(void);
-void DBG_Led_Audio_Engine_Off(void);
+void DBG_Led_Audio_Off(void);
 
 void DBG_Pod_0_On(void);
 void DBG_Pod_1_On(void);
