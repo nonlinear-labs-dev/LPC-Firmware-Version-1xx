@@ -8,10 +8,20 @@
 #define _NL_SUP_H_
 #include "cmsis/LPC43xx.h"
 
-#define SUP_PROCCESS_TIMESLICE	(10)	// # of milliseconds between calls to handler
+
+
+// # of milliseconds between calls to handler. DO NOT CHANGE!
+#define SUP_PROCCESS_TIMESLICE	(10)
+
+// time in milliseconds without incoming midi traffic to raise "audio engine offline"
+#define TRAFFIC_TIMEOUT		(120)
+
 
 void SUP_Init(void);
 void SUP_Process(void);
 void SUP_MidiTrafficDetected(void);
+
+void SUP_Enable_Override_Muting(uint8_t on_off);
+void SUP_Override_Muting(uint8_t new_unmute_state);	// ==0 means muted. effective only when enabled
 
 #endif

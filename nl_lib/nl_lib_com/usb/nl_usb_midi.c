@@ -28,6 +28,12 @@
     			}
 	@ingroup	nl_drv_modules
     @author		Nemanja Nikodijevic [2014-12-11]
+
+	CHANGES
+	2018-11	KSTR
+		Added Detection of incoming Midi data to control audio muting relays
+		via Supervisor uC
+
 *******************************************************************************/
 #include <string.h>
 #include "usb/nl_usb_midi.h"
@@ -197,6 +203,11 @@ void USB_MIDI_DropMessages(uint8_t drop){
 	midiDropMessages = drop;
 }
 
+/******************************************************************************/
+/** @brief		process incoming Midi data (Callback routine for "USB_MIDI_Config()")
+    @param[in]	buff	Pointer to data buffer
+    @param[in]	cnt		Amount of bytes to send
+*******************************************************************************/
 void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
 {
 	SUP_MidiTrafficDetected();
