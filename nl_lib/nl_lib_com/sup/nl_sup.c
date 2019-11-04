@@ -90,7 +90,7 @@ void SUP_MidiTrafficDetected(void)
 
 void SUP_Enable_Override_Muting(uint8_t on_off)
 {
-	override = (on_off != 0);
+	override = ( on_off != 0 );
 }
 
 void SUP_Override_Muting(uint8_t new_unmute_state)	// effective only when enabled

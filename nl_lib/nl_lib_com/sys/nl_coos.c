@@ -172,15 +172,15 @@ void COOS_Dispatch(void)
 *******************************************************************************/
 void COOS_Update(void)
 {
-	uint8_t index;
+	uint8_t index, over=0;
 	sleep = 0;
 
 #if 1 // check for task overrun
 	if (checkTaskOverflow > 0)
 	{
 		taskOverflow++;															// error: Dispatch() took longer than one time slot
-		DBG_Led_Warning_On();
-		COOS_Task_Add(DBG_Led_Warning_Off, 20000, 0);							// stays on for 2.5 sec
+//		DBG_Led_Warning_On();
+//		COOS_Task_Add(DBG_Led_Warning_Off, 20000, 0);							// stays on for 2.5 sec
 	}
 	else
 	{
@@ -197,11 +197,18 @@ void COOS_Update(void)
 			if (COOS_taskArray[index].countDown <= 0)							// check if task is due to run / <0 for one shot tasks
 			{
 				COOS_taskArray[index].run++;									// yes, task is due to run -> increase run-flag
+				if (COOS_taskArray[index].run > 1)						// any task pending more than once
+					over = 1;
 				if (COOS_taskArray[index].period >= 1)
 				{																// schedule periodic task to run again
 					COOS_taskArray[index].countDown = COOS_taskArray[index].period;
 				}
 			}
 		}
+	}
+	if (over)
+	{
+		DBG_Led_Warning_On();
+		COOS_Task_Add(DBG_Led_Warning_Off, 2000, 0);							// stays on for 250ms sec
 	}
 }
