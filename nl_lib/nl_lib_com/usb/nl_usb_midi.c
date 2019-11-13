@@ -42,6 +42,8 @@
 
 #include "cmsis/LPC43xx.h"
 #include "sup/nl_sup.h"
+#include "spibb/nl_spi_bb.h"
+#include "spibb/nl_bb_msg.h"
 
 static uint32_t endOfBuffer = 0;
 
@@ -49,37 +51,43 @@ static uint8_t midiBuffer[2][USB_MIDI_BUFFER_SIZE];
 static uint8_t activeBuffer = 0;
 static uint32_t midiBuffPosition[2];
 
-static MidiRcvCallback	USB_MIDI_RcvCallback = 0;
+static MidiRcvCallback USB_MIDI_RcvCallback = 0;
 
 static uint8_t midiDropMessages = 0;
+
+static uint64_t audioEngineHeartBeat = 0;
+static uint64_t lpcHeartBeat = 0;
 
 /******************************************************************************/
 /** @brief		Endpoint 1 Callback
     @param[in]	event	Event that triggered the interrupt
 *******************************************************************************/
-static void USB_EndPoint1 (uint32_t event) {
+static void USB_EndPoint1(uint32_t event)
+{
 	static uint8_t outbuff[512];
 	uint32_t length;
 
-	switch (event) {
+	switch (event)
+	{
 	case USB_EVT_OUT:
 		length = USB_ReadEP(0x01, outbuff);
-		if(USB_MIDI_RcvCallback)
+		if (USB_MIDI_RcvCallback)
 			USB_MIDI_RcvCallback(outbuff, length);
 	case USB_EVT_OUT_NAK:
-		USB_ReadReqEP(0x01,outbuff,512);
-	  break;
+		USB_ReadReqEP(0x01, outbuff, 512);
+		break;
 	}
 }
-
 
 /******************************************************************************/
 /** @brief		Endpoint 2 Callback
     @param[in]	event	Event that triggered the interrupt
 *******************************************************************************/
-static void USB_EndPoint2 (uint32_t event) {
+static void USB_EndPoint2(uint32_t event)
+{
 
-	switch (event) {
+	switch (event)
+	{
 	case USB_EVT_IN_NAK:
 	case USB_EVT_IN:
 		USB_MIDI_CheckBuffer();
@@ -93,11 +101,11 @@ static void USB_EndPoint2 (uint32_t event) {
 void USB_MIDI_Init(void)
 {
 	/** assign descriptors */
-	USB_Core_Device_Descriptor_Set((const uint8_t*) USB_MIDI_DeviceDescriptor);
-	USB_Core_Device_FS_Descriptor_Set((const uint8_t*) USB_MIDI_FSConfigDescriptor);
-	USB_Core_Device_HS_Descriptor_Set((const uint8_t*) USB_MIDI_HSConfigDescriptor);
-	USB_Core_Device_String_Descriptor_Set((const uint8_t*) USB_MIDI_StringDescriptor);
-	USB_Core_Device_Device_Quali_Descriptor_Set((const uint8_t*) USB_MIDI_DeviceQualifier);
+	USB_Core_Device_Descriptor_Set((const uint8_t *)USB_MIDI_DeviceDescriptor);
+	USB_Core_Device_FS_Descriptor_Set((const uint8_t *)USB_MIDI_FSConfigDescriptor);
+	USB_Core_Device_HS_Descriptor_Set((const uint8_t *)USB_MIDI_HSConfigDescriptor);
+	USB_Core_Device_String_Descriptor_Set((const uint8_t *)USB_MIDI_StringDescriptor);
+	USB_Core_Device_Device_Quali_Descriptor_Set((const uint8_t *)USB_MIDI_DeviceQualifier);
 	/** assign callbacks */
 	USB_Core_Endpoint_Callback_Set(1, USB_EndPoint1);
 	USB_Core_Endpoint_Callback_Set(2, USB_EndPoint2);
@@ -126,7 +134,8 @@ void USB_MIDI_Poll(void)
 /** @brief		Checks whether the USB-MIDI is connected and configured
     @return		1 - Success ; 0 - Failure
 *******************************************************************************/
-uint32_t USB_MIDI_IsConfigured(void) {
+uint32_t USB_MIDI_IsConfigured(void)
+{
 	return USB_Core_IsConfigured();
 }
 
@@ -137,18 +146,23 @@ uint32_t USB_MIDI_IsConfigured(void) {
     @param[in]	imm		Immediate only
     @return		Number of bytes written - Success ; 0 - Failure
 *******************************************************************************/
-uint32_t USB_MIDI_Send(uint8_t* buff, uint32_t cnt, uint8_t imm) {
+uint32_t USB_MIDI_Send(uint8_t *buff, uint32_t cnt, uint8_t imm)
+{
 
-	if(midiDropMessages) {
+	if (midiDropMessages)
+	{
 		return 0;
 	}
 
-	if(USB_Core_ReadyToWrite(0x82)) {
-		USB_WriteEP (0x82, buff, cnt);
+	if (USB_Core_ReadyToWrite(0x82))
+	{
+		USB_WriteEP(0x82, buff, cnt);
 		endOfBuffer = (uint32_t)buff + cnt;
 		return cnt;
-	} else if(!imm) {
-		return USB_MIDI_SendDelayed(buff,cnt);
+	}
+	else if (!imm)
+	{
+		return USB_MIDI_SendDelayed(buff, cnt);
 	}
 	return 0;
 }
@@ -159,12 +173,15 @@ uint32_t USB_MIDI_Send(uint8_t* buff, uint32_t cnt, uint8_t imm) {
     @param[in]	cnt		Amount of bytes to send
     @return		Number of bytes written - Success ; 0 - Failure
 *******************************************************************************/
-uint32_t USB_MIDI_SendDelayed(uint8_t* buff, uint32_t cnt) {
-	uint32_t i=0;
-	if(midiDropMessages) {
+uint32_t USB_MIDI_SendDelayed(uint8_t *buff, uint32_t cnt)
+{
+	uint32_t i = 0;
+	if (midiDropMessages)
+	{
 		return 0;
 	}
-	while((midiBuffPosition[activeBuffer] < USB_MIDI_BUFFER_SIZE) && (i < cnt)) {
+	while ((midiBuffPosition[activeBuffer] < USB_MIDI_BUFFER_SIZE) && (i < cnt))
+	{
 		midiBuffer[activeBuffer][midiBuffPosition[activeBuffer]] = buff[i];
 		i++;
 		midiBuffPosition[activeBuffer]++;
@@ -176,14 +193,17 @@ uint32_t USB_MIDI_SendDelayed(uint8_t* buff, uint32_t cnt) {
 /** @brief		Send out the current buffer
  	@return		1 - Success; 0 - Failure
 *******************************************************************************/
-uint32_t USB_MIDI_CheckBuffer(void){
-	if(midiBuffPosition[activeBuffer] && USB_Core_ReadyToWrite(0x82)) {
-			  USB_WriteEP(0x82, midiBuffer[activeBuffer], midiBuffPosition[activeBuffer]);
-			  endOfBuffer = (uint32_t)midiBuffer[activeBuffer] + midiBuffPosition[activeBuffer];
-			  midiBuffPosition[activeBuffer] = 0;
-			  activeBuffer = activeBuffer?0:1;
-			  return 1;
-	} else
+uint32_t USB_MIDI_CheckBuffer(void)
+{
+	if (midiBuffPosition[activeBuffer] && USB_Core_ReadyToWrite(0x82))
+	{
+		USB_WriteEP(0x82, midiBuffer[activeBuffer], midiBuffPosition[activeBuffer]);
+		endOfBuffer = (uint32_t)midiBuffer[activeBuffer] + midiBuffPosition[activeBuffer];
+		midiBuffPosition[activeBuffer] = 0;
+		activeBuffer = activeBuffer ? 0 : 1;
+		return 1;
+	}
+	else
 		return 0;
 }
 
@@ -191,7 +211,8 @@ uint32_t USB_MIDI_CheckBuffer(void){
 /** @brief		Get the amount of bytes left to be sent
     @return		Amount of bytes to be sent from the buffer
 *******************************************************************************/
-uint32_t USB_MIDI_BytesToSend(void) {
+uint32_t USB_MIDI_BytesToSend(void)
+{
 	return USB_Core_BytesToSend(endOfBuffer, 0x82);
 }
 
@@ -199,7 +220,8 @@ uint32_t USB_MIDI_BytesToSend(void) {
 /** @brief		Drop all messages written to the interface
     @param[in]	drop	1 - drop future messages; 0 - do not drop future msgs
 *******************************************************************************/
-void USB_MIDI_DropMessages(uint8_t drop){
+void USB_MIDI_DropMessages(uint8_t drop)
+{
 	midiDropMessages = drop;
 }
 
@@ -208,7 +230,28 @@ void USB_MIDI_DropMessages(uint8_t drop){
     @param[in]	buff	Pointer to data buffer
     @param[in]	cnt		Amount of bytes to send
 *******************************************************************************/
-void USB_MIDI_Receive(uint8_t* buff, uint32_t len)
+void USB_MIDI_Receive(uint8_t *buff, uint32_t len)
 {
 	SUP_MidiTrafficDetected();
+
+	while (len >= 3)
+	{
+		unsigned long shift = (buff[0] & 0x03) * 14;
+
+		uint64_t lsb = *(buff + 1);
+		uint64_t msb = *(buff + 2);
+
+		audioEngineHeartBeat = (buff[0] == 0xA0) ? 0 : audioEngineHeartBeat;
+		audioEngineHeartBeat |= (msb << shift);
+		audioEngineHeartBeat |= (lsb << (shift + 7));
+
+		if (buff[0] == 0xA2)
+		{
+			uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
+			BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *)&chainHeartbeat);
+			audioEngineHeartBeat++;
+		}
+
+		len -= 3;
+	}
 }
