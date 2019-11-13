@@ -64,19 +64,19 @@ static uint64_t lpcHeartBeat = 0;
 *******************************************************************************/
 static void USB_EndPoint1(uint32_t event)
 {
-	static uint8_t outbuff[512];
-	uint32_t length;
+  static uint8_t outbuff[512];
+  uint32_t length;
 
-	switch (event)
-	{
-	case USB_EVT_OUT:
-		length = USB_ReadEP(0x01, outbuff);
-		if (USB_MIDI_RcvCallback)
-			USB_MIDI_RcvCallback(outbuff, length);
-	case USB_EVT_OUT_NAK:
-		USB_ReadReqEP(0x01, outbuff, 512);
-		break;
-	}
+  switch(event)
+  {
+    case USB_EVT_OUT:
+      length = USB_ReadEP(0x01, outbuff);
+      if(USB_MIDI_RcvCallback)
+        USB_MIDI_RcvCallback(outbuff, length);
+    case USB_EVT_OUT_NAK:
+      USB_ReadReqEP(0x01, outbuff, 512);
+      break;
+  }
 }
 
 /******************************************************************************/
@@ -86,13 +86,13 @@ static void USB_EndPoint1(uint32_t event)
 static void USB_EndPoint2(uint32_t event)
 {
 
-	switch (event)
-	{
-	case USB_EVT_IN_NAK:
-	case USB_EVT_IN:
-		USB_MIDI_CheckBuffer();
-		break;
-	}
+  switch(event)
+  {
+    case USB_EVT_IN_NAK:
+    case USB_EVT_IN:
+      USB_MIDI_CheckBuffer();
+      break;
+  }
 }
 
 /******************************************************************************/
@@ -100,16 +100,16 @@ static void USB_EndPoint2(uint32_t event)
 *******************************************************************************/
 void USB_MIDI_Init(void)
 {
-	/** assign descriptors */
-	USB_Core_Device_Descriptor_Set((const uint8_t *)USB_MIDI_DeviceDescriptor);
-	USB_Core_Device_FS_Descriptor_Set((const uint8_t *)USB_MIDI_FSConfigDescriptor);
-	USB_Core_Device_HS_Descriptor_Set((const uint8_t *)USB_MIDI_HSConfigDescriptor);
-	USB_Core_Device_String_Descriptor_Set((const uint8_t *)USB_MIDI_StringDescriptor);
-	USB_Core_Device_Device_Quali_Descriptor_Set((const uint8_t *)USB_MIDI_DeviceQualifier);
-	/** assign callbacks */
-	USB_Core_Endpoint_Callback_Set(1, USB_EndPoint1);
-	USB_Core_Endpoint_Callback_Set(2, USB_EndPoint2);
-	USB_Core_Init();
+  /** assign descriptors */
+  USB_Core_Device_Descriptor_Set((const uint8_t *) USB_MIDI_DeviceDescriptor);
+  USB_Core_Device_FS_Descriptor_Set((const uint8_t *) USB_MIDI_FSConfigDescriptor);
+  USB_Core_Device_HS_Descriptor_Set((const uint8_t *) USB_MIDI_HSConfigDescriptor);
+  USB_Core_Device_String_Descriptor_Set((const uint8_t *) USB_MIDI_StringDescriptor);
+  USB_Core_Device_Device_Quali_Descriptor_Set((const uint8_t *) USB_MIDI_DeviceQualifier);
+  /** assign callbacks */
+  USB_Core_Endpoint_Callback_Set(1, USB_EndPoint1);
+  USB_Core_Endpoint_Callback_Set(2, USB_EndPoint2);
+  USB_Core_Init();
 }
 
 /******************************************************************************/
@@ -119,7 +119,7 @@ void USB_MIDI_Init(void)
 *******************************************************************************/
 void USB_MIDI_Config(MidiRcvCallback midircv)
 {
-	USB_MIDI_RcvCallback = midircv;
+  USB_MIDI_RcvCallback = midircv;
 }
 
 /******************************************************************************/
@@ -127,7 +127,7 @@ void USB_MIDI_Config(MidiRcvCallback midircv)
 *******************************************************************************/
 void USB_MIDI_Poll(void)
 {
-	USB0_IRQHandler();
+  USB0_IRQHandler();
 }
 
 /******************************************************************************/
@@ -136,7 +136,7 @@ void USB_MIDI_Poll(void)
 *******************************************************************************/
 uint32_t USB_MIDI_IsConfigured(void)
 {
-	return USB_Core_IsConfigured();
+  return USB_Core_IsConfigured();
 }
 
 /******************************************************************************/
@@ -149,22 +149,22 @@ uint32_t USB_MIDI_IsConfigured(void)
 uint32_t USB_MIDI_Send(uint8_t *buff, uint32_t cnt, uint8_t imm)
 {
 
-	if (midiDropMessages)
-	{
-		return 0;
-	}
+  if(midiDropMessages)
+  {
+    return 0;
+  }
 
-	if (USB_Core_ReadyToWrite(0x82))
-	{
-		USB_WriteEP(0x82, buff, cnt);
-		endOfBuffer = (uint32_t)buff + cnt;
-		return cnt;
-	}
-	else if (!imm)
-	{
-		return USB_MIDI_SendDelayed(buff, cnt);
-	}
-	return 0;
+  if(USB_Core_ReadyToWrite(0x82))
+  {
+    USB_WriteEP(0x82, buff, cnt);
+    endOfBuffer = (uint32_t) buff + cnt;
+    return cnt;
+  }
+  else if(!imm)
+  {
+    return USB_MIDI_SendDelayed(buff, cnt);
+  }
+  return 0;
 }
 
 /******************************************************************************/
@@ -175,18 +175,18 @@ uint32_t USB_MIDI_Send(uint8_t *buff, uint32_t cnt, uint8_t imm)
 *******************************************************************************/
 uint32_t USB_MIDI_SendDelayed(uint8_t *buff, uint32_t cnt)
 {
-	uint32_t i = 0;
-	if (midiDropMessages)
-	{
-		return 0;
-	}
-	while ((midiBuffPosition[activeBuffer] < USB_MIDI_BUFFER_SIZE) && (i < cnt))
-	{
-		midiBuffer[activeBuffer][midiBuffPosition[activeBuffer]] = buff[i];
-		i++;
-		midiBuffPosition[activeBuffer]++;
-	}
-	return i;
+  uint32_t i = 0;
+  if(midiDropMessages)
+  {
+    return 0;
+  }
+  while((midiBuffPosition[activeBuffer] < USB_MIDI_BUFFER_SIZE) && (i < cnt))
+  {
+    midiBuffer[activeBuffer][midiBuffPosition[activeBuffer]] = buff[i];
+    i++;
+    midiBuffPosition[activeBuffer]++;
+  }
+  return i;
 }
 
 /******************************************************************************/
@@ -195,16 +195,16 @@ uint32_t USB_MIDI_SendDelayed(uint8_t *buff, uint32_t cnt)
 *******************************************************************************/
 uint32_t USB_MIDI_CheckBuffer(void)
 {
-	if (midiBuffPosition[activeBuffer] && USB_Core_ReadyToWrite(0x82))
-	{
-		USB_WriteEP(0x82, midiBuffer[activeBuffer], midiBuffPosition[activeBuffer]);
-		endOfBuffer = (uint32_t)midiBuffer[activeBuffer] + midiBuffPosition[activeBuffer];
-		midiBuffPosition[activeBuffer] = 0;
-		activeBuffer = activeBuffer ? 0 : 1;
-		return 1;
-	}
-	else
-		return 0;
+  if(midiBuffPosition[activeBuffer] && USB_Core_ReadyToWrite(0x82))
+  {
+    USB_WriteEP(0x82, midiBuffer[activeBuffer], midiBuffPosition[activeBuffer]);
+    endOfBuffer = (uint32_t) midiBuffer[activeBuffer] + midiBuffPosition[activeBuffer];
+    midiBuffPosition[activeBuffer] = 0;
+    activeBuffer = activeBuffer ? 0 : 1;
+    return 1;
+  }
+  else
+    return 0;
 }
 
 /******************************************************************************/
@@ -213,7 +213,7 @@ uint32_t USB_MIDI_CheckBuffer(void)
 *******************************************************************************/
 uint32_t USB_MIDI_BytesToSend(void)
 {
-	return USB_Core_BytesToSend(endOfBuffer, 0x82);
+  return USB_Core_BytesToSend(endOfBuffer, 0x82);
 }
 
 /******************************************************************************/
@@ -222,7 +222,7 @@ uint32_t USB_MIDI_BytesToSend(void)
 *******************************************************************************/
 void USB_MIDI_DropMessages(uint8_t drop)
 {
-	midiDropMessages = drop;
+  midiDropMessages = drop;
 }
 
 /******************************************************************************/
@@ -232,26 +232,26 @@ void USB_MIDI_DropMessages(uint8_t drop)
 *******************************************************************************/
 void USB_MIDI_Receive(uint8_t *buff, uint32_t len)
 {
-	SUP_MidiTrafficDetected();
+  SUP_MidiTrafficDetected();
 
-	while (len >= 3)
-	{
-		unsigned long shift = (buff[0] & 0x03) * 14;
+  while(len >= 3)
+  {
+    unsigned long shift = (buff[0] & 0x03) * 14;
 
-		uint64_t lsb = *(buff + 1);
-		uint64_t msb = *(buff + 2);
+    uint64_t lsb = *(buff + 1);
+    uint64_t msb = *(buff + 2);
 
-		audioEngineHeartBeat = (buff[0] == 0xA0) ? 0 : audioEngineHeartBeat;
-		audioEngineHeartBeat |= (msb << shift);
-		audioEngineHeartBeat |= (lsb << (shift + 7));
+    audioEngineHeartBeat = (buff[0] == 0xA0) ? 0 : audioEngineHeartBeat;
+    audioEngineHeartBeat |= (msb << shift);
+    audioEngineHeartBeat |= (lsb << (shift + 7));
 
-		if (buff[0] == 0xA2)
-		{
-			uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
-			BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *)&chainHeartbeat);
-			audioEngineHeartBeat++;
-		}
+    if(buff[0] == 0xA2)
+    {
+      uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
+      BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *) &chainHeartbeat);
+      audioEngineHeartBeat++;
+    }
 
-		len -= 3;
-	}
+    len -= 3;
+  }
 }
