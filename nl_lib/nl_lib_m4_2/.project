@@ -26,6 +26,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>heartbeat</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/nl_lib_com/heartbeat</locationURI>
+		</link>
+		<link>
 			<name>nl_lib_com</name>
 			<type>2</type>
 			<locationURI>$%7BPARENT-1-PROJECT_LOC%7D/nl_lib_com</locationURI>

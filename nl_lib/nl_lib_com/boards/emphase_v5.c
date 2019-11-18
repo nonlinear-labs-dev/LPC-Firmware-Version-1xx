@@ -2,6 +2,10 @@
 /** @file		emphase_v5.c
     @date		2015-11-30 NNI
     @author		2015-01-27 DTZ
+    changes:
+    	2019-11-18 KSTR	:
+    		added pins for supervisor communication (toggle line and
+    		non-maskable "always unmute" hardware jumper
 *******************************************************************************/
 
 #include <stdint.h>
@@ -13,6 +17,7 @@
 #include "espi/nl_espi_core.h"
 #include "drv/nl_kbs.h"
 #include "spibb/nl_spi_bb.h"
+#include "sup/nl_sup.h"
 
 static void ConfigureClocks(void);
 static void Delay100(void);
@@ -20,6 +25,7 @@ static void InitDebugPins(void);
 static void InitEspiPins(void);
 static void InitBbbLpcSpiPins(void);
 static void InitKeybedScannerPins(void);
+static void InitSupPins(void);
 
 
 /*******************************************************************************
@@ -31,6 +37,7 @@ void EMPHASE_V5_M4_Init(void)
 
 	InitBbbLpcSpiPins();
 	InitDebugPins();
+	InitSupPins();
 }
 
 void EMPHASE_V5_M0_Init(void)
@@ -698,6 +705,7 @@ static PIN_CFG_T lpc_dbg_led_audio_ok = {
 	.function		= 0
 };
 
+#if 0
 static PIN_CFG_T lpc_dbg_pod[8] = {
 	{
 		.pinId  		= {6,1},
@@ -712,7 +720,7 @@ static PIN_CFG_T lpc_dbg_pod[8] = {
 		.function		= 0,
 	},
 	{
-		.pinId  		= {6,2},
+		.pinId  		= {6,2},			// conflicts with config jumper for forced unmute
 		.ioType 		= PIN_TYPE_GPIO,
 		.gpioId 		= {3,1},
 		.direction		= PIN_GPIO_DIR_OUT,
@@ -796,6 +804,7 @@ static PIN_CFG_T lpc_dbg_pod[8] = {
 		.function		= 0,
 	}
 };
+#endif
 
 static PIN_CFG_T lpc_dbg_uart_tx = {
 	.pinId  		= {2,10},
@@ -817,6 +826,7 @@ static DBG_PINS_T debug_pins = {
 	.led_cpu		= &lpc_dbg_led_m0_hb.gpioId,
 	.led_audio		= &lpc_dbg_led_audio_ok.gpioId,
 
+#if 0
 	.pod[0] = &lpc_dbg_pod[0].gpioId,
 	.pod[1] = &lpc_dbg_pod[1].gpioId,
 	.pod[2] = &lpc_dbg_pod[2].gpioId,
@@ -825,6 +835,7 @@ static DBG_PINS_T debug_pins = {
 	.pod[5] = &lpc_dbg_pod[5].gpioId,
 	.pod[6] = &lpc_dbg_pod[6].gpioId,
 	.pod[7] = &lpc_dbg_pod[7].gpioId
+#endif
 };
 
 
@@ -838,6 +849,7 @@ static void InitDebugPins(void)
 	PIN_Config(&lpc_dbg_led_audio_ok);
 	PIN_Config(&lpc_dbg_uart_tx);
 
+#if 0
 	PIN_Config(&lpc_dbg_pod[0]);
 	PIN_Config(&lpc_dbg_pod[1]);
 	PIN_Config(&lpc_dbg_pod[2]);
@@ -846,8 +858,56 @@ static void InitDebugPins(void)
 	PIN_Config(&lpc_dbg_pod[5]);
 	PIN_Config(&lpc_dbg_pod[6]);
 	PIN_Config(&lpc_dbg_pod[7]);
+#endif
 
 	DBG_Config(LPC_USART2, 115200, &debug_pins);
 }
 
 
+
+
+
+/*******************************************************************************
+	supervisor module
+*******************************************************************************/
+static PIN_CFG_T lpc_sup_mute = {
+	.pinId  		= {5,6},
+	.ioType 		= PIN_TYPE_GPIO,
+	.gpioId 		= {2,15},
+	.direction		= PIN_GPIO_DIR_OUT,
+	.inputBuffer	= PIN_INBUF_OFF,
+	.glitchFilter 	= PIN_FILTER_ON,
+	.slewRate 		= PIN_SRATE_SLOW,
+	.pullDown 		= PIN_PDN_ON,
+	.pullUp 		= PIN_PUP_OFF,
+	.function		= 0
+};
+
+static PIN_CFG_T lpc_unmute_jumper = {
+	.pinId  		= {6,2},			// conflicts with lpc_dbg_pod[1]
+	.ioType 		= PIN_TYPE_GPIO,
+	.gpioId 		= {3,1},
+	.direction		= PIN_GPIO_DIR_IN,
+	.inputBuffer	= PIN_INBUF_ON,
+	.glitchFilter 	= PIN_FILTER_ON,
+	.slewRate 		= PIN_SRATE_SLOW,
+	.pullDown 		= PIN_PDN_OFF,
+	.pullUp 		= PIN_PUP_ON,
+	.function		= 0,
+};
+
+static SUP_PINS_T sup_pins = {
+	.lpc_sup_mute 		= &lpc_sup_mute.gpioId,
+	.lpc_unmute_jumper	= &lpc_unmute_jumper.gpioId
+};
+
+
+static void InitSupPins(void)
+{
+	PIN_Config(&lpc_sup_mute);
+	PIN_Config(&lpc_unmute_jumper);
+
+	SUP_Config(&sup_pins);
+}
+
+// EOF

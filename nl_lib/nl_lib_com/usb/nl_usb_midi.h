@@ -33,5 +33,4 @@ uint32_t USB_MIDI_SendDelayed(uint8_t* buff, uint32_t cnt);
 uint32_t USB_MIDI_CheckBuffer(void);
 uint32_t USB_MIDI_BytesToSend(void);
 void USB_MIDI_DropMessages(uint8_t drop);
-void USB_MIDI_Receive(uint8_t* buff, uint32_t len);
 #endif /* NL_USB_MIDI_H_ */

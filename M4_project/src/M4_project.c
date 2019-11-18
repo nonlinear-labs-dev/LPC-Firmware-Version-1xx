@@ -37,7 +37,7 @@
 #include "tcd/nl_tcd_param_work.h"
 #include "tcd/nl_tcd_msg.h"
 #include "sup/nl_sup.h"
-
+#include "heartbeat/nl_heartbeat.h"
 
 volatile uint8_t  waitForFirstSysTick = 1;
 
@@ -138,6 +138,7 @@ void Init(void)
     DBG_Led_Cpu_Off();
     DBG_Led_Warning_Off();
     DBG_Led_Audio_Off();
+#if 0
     DBG_Pod_0_Off();
     DBG_Pod_1_Off();
     DBG_Pod_2_Off();
@@ -146,10 +147,11 @@ void Init(void)
     DBG_Pod_5_Off();
     DBG_Pod_6_Off();
     DBG_Pod_7_Off();
+#endif
 
     /* USB */
     USB_MIDI_Init();
-    USB_MIDI_Config(USB_MIDI_Receive);
+    USB_MIDI_Config(HBT_MidiReceive);
 
 	volatile uint32_t timeOut = 0x0FFFFF;
 
@@ -189,6 +191,7 @@ void Init(void)
     COOS_Task_Add(MSG_CheckUSB,		105, 1600);	// every 200 ms, checking if the USB connection to the ePC or the ePC is still working
     COOS_Task_Add(DBG_Process,      95, 4800);	// every 600 ms
     COOS_Task_Add(SUP_Process,      55, SUP_PROCCESS_TIMESLICE*8);
+    COOS_Task_Add(HBT_Process,      45, HBT_PROCCESS_TIMESLICE*8);
 
     /* M0 */
     CPU_M0_Init();

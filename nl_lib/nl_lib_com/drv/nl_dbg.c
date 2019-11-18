@@ -21,6 +21,7 @@ static uint32_t dbg_uart_baudrate;
 
 static DBG_PINS_T* pins;
 
+#if 0
 void (* const DBG_Pod_On[8])(void) = {
 		DBG_Pod_0_On,
 		DBG_Pod_1_On,
@@ -42,6 +43,7 @@ void (* const DBG_Pod_Off[8])(void) = {
 		DBG_Pod_6_Off,
 		DBG_Pod_7_Off,
 };
+#endif
 
 static void DBG_Callback(uint32_t status)
 {
@@ -145,6 +147,7 @@ void DBG_Led_Audio_Off(void)
 	NL_GPIO_Clr(pins->led_audio);
 }
 
+#if 0
 void DBG_Pod_0_On(void)
 {
 	NL_GPIO_Set(pins->pod[0]);
@@ -209,6 +212,7 @@ void DBG_Pod_7_Off(void)
 {
 	NL_GPIO_Clr(pins->pod[7]);
 }
+#endif
 
 
 /******************************************************************************/

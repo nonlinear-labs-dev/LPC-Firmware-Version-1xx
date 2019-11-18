@@ -29,11 +29,6 @@
 	@ingroup	nl_drv_modules
     @author		Nemanja Nikodijevic [2014-12-11]
 
-	CHANGES
-	2018-11	KSTR
-		Added Detection of incoming Midi data to control audio muting relays
-		via Supervisor uC
-
 *******************************************************************************/
 #include <string.h>
 #include "usb/nl_usb_midi.h"
@@ -41,9 +36,10 @@
 #include "usb/nl_usb_core.h"
 
 #include "cmsis/LPC43xx.h"
-#include "sup/nl_sup.h"
 #include "spibb/nl_spi_bb.h"
 #include "spibb/nl_bb_msg.h"
+#include "drv/nl_dbg.h"
+#include "heartbeat/nl_heartbeat.h"
 
 static uint32_t endOfBuffer = 0;
 
@@ -55,8 +51,6 @@ static MidiRcvCallback USB_MIDI_RcvCallback = 0;
 
 static uint8_t midiDropMessages = 0;
 
-static uint64_t audioEngineHeartBeat = 0;
-static uint64_t lpcHeartBeat = 0;
 
 /******************************************************************************/
 /** @brief		Endpoint 1 Callback
@@ -225,33 +219,5 @@ void USB_MIDI_DropMessages(uint8_t drop)
   midiDropMessages = drop;
 }
 
-/******************************************************************************/
-/** @brief		process incoming Midi data (Callback routine for "USB_MIDI_Config()")
-    @param[in]	buff	Pointer to data buffer
-    @param[in]	cnt		Amount of bytes to send
-*******************************************************************************/
-void USB_MIDI_Receive(uint8_t *buff, uint32_t len)
-{
-  SUP_MidiTrafficDetected();
 
-  while(len >= 3)
-  {
-    unsigned long shift = (buff[0] & 0x03) * 14;
-
-    uint64_t lsb = *(buff + 1);
-    uint64_t msb = *(buff + 2);
-
-    audioEngineHeartBeat = (buff[0] == 0xA0) ? 0 : audioEngineHeartBeat;
-    audioEngineHeartBeat |= (msb << shift);
-    audioEngineHeartBeat |= (lsb << (shift + 7));
-
-    if(buff[0] == 0xA2)
-    {
-      uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
-      BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *) &chainHeartbeat);
-      audioEngineHeartBeat++;
-    }
-
-    len -= 3;
-  }
-}
+// EOF

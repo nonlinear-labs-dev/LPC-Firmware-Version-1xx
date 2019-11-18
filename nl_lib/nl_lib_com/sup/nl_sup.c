@@ -25,19 +25,6 @@
 
 
 
-static PIN_CFG_T lpc_sup_mute = {
-	.pinId  		= {5,6},
-	.ioType 		= PIN_TYPE_GPIO,
-	.gpioId 		= {2,15},
-	.direction		= PIN_GPIO_DIR_OUT,
-	.inputBuffer	= PIN_INBUF_OFF,
-	.glitchFilter 	= PIN_FILTER_ON,
-	.slewRate 		= PIN_SRATE_SLOW,
-	.pullDown 		= PIN_PDN_ON,
-	.pullUp 		= PIN_PUP_OFF,
-	.function		= 0
-};
-
 
 volatile uint16_t		midi_timeout=0;
 uint8_t					audio_engine_online = 0;
@@ -58,10 +45,25 @@ uint8_t					transition = MUTED;
 uint8_t					new_transition = MUTED;
 
 
+
+static SUP_PINS_T* pins;
+
+void SUP_Config(SUP_PINS_T *sup_pins)
+{
+	pins = sup_pins;
+}
+
+
+
+void Set_Signalling_GPIO_Pin(uint8_t new_state)
+{
+	NL_GPIO_SetState(pins->lpc_sup_mute, new_state);
+}
+
+
 void SUP_Init(void)
 {
-	PIN_Config(&lpc_sup_mute);
-	NL_GPIO_SetState(&lpc_sup_mute.gpioId, 0);
+	Set_Signalling_GPIO_Pin(0);
 
 	midi_timeout = 0;
 	audio_engine_online = 0;
@@ -99,32 +101,30 @@ void SUP_Override_Muting(uint8_t new_unmute_state)	// effective only when enable
 }
 
 
-void Set_Signalling_GPIO_Pin(uint8_t new_state)
-{
-	NL_GPIO_SetState(&lpc_sup_mute.gpioId, new_state);
-}
-
-
 
 void SUP_Process(void)
 {
 	if (midi_timeout)
 		midi_timeout--;
 
-	if (override)	unmute_state = override_state;
-	else			unmute_state = (midi_timeout != 0);
+	if (NL_GPIO_Get(pins->lpc_unmute_jumper) == 0)	// hardware jumper reads low (jumper set) ?
+		unmute_state = 1;							// 	-> force unmute
+	else if (override)								// software override ?
+		unmute_state = override_state;				//  -> use override state
+	else											// normal operation ?
+		unmute_state = (midi_timeout != 0);			//  -> unmute if midi traffic did not time out
 
 	if (unmute_state != old_unmute_state)
 	{
 		old_unmute_state = unmute_state;
 		if (unmute_state)
 		{
-			DBG_Led_Audio_On();
+			// DBG_Led_Audio_On();
 			new_transition = UNMUTED;
 		}
 		else
 		{
-			DBG_Led_Audio_Off();
+			// DBG_Led_Audio_Off();
 			new_transition = MUTED;
 		}
 	}
