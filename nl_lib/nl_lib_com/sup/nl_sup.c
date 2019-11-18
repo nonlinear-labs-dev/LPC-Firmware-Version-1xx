@@ -119,12 +119,12 @@ void SUP_Process(void)
 		old_unmute_state = unmute_state;
 		if (unmute_state)
 		{
-			// DBG_Led_Audio_On();
+			DBG_Led_Audio_On();
 			new_transition = UNMUTED;
 		}
 		else
 		{
-			// DBG_Led_Audio_Off();
+			DBG_Led_Audio_Off();
 			new_transition = MUTED;
 		}
 	}
