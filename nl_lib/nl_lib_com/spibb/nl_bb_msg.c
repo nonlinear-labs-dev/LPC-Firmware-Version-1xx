@@ -8,7 +8,6 @@
 #include "nl_bb_msg.h"
 #include "nl_spi_bb.h"
 
-#include "tcd/nl_tcd_env.h"
 #include "tcd/nl_tcd_param_work.h"
 #include "tcd/nl_tcd_adc_work.h"
 #include "tcd/nl_tcd_poly.h"

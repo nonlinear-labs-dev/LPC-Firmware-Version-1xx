@@ -9,7 +9,6 @@
 
 #include "nl_tcd_poly.h"
 
-#include "nl_tcd_env.h"
 #include "nl_tcd_param_work.h"
 #include "nl_tcd_msg.h"
 #include "nl_tcd_valloc.h"
@@ -216,6 +215,8 @@ void POLY_SetUnisonVoices(int32_t value)
 	{
 		e_UnisonVoices = value;
 
-		VALLOC_Init((uint32_t)(NUM_VOICES / e_UnisonVoices));
+		VALLOC_Init((uint32_t)(NUM_VOICES / e_UnisonVoices));		// for Unison only fraction of the number of voices will allocated
+
+		MSG_Reset(1);							// reset the envelopes
 	}
 }

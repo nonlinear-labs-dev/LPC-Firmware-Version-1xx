@@ -29,10 +29,7 @@
 /*	modul local variables													  */
 /******************************************************************************/
 
-static int32_t	oldVoice = -1;
 static int32_t	oldParameter = -1;
-
-static int32_t	multipleVoices = 0;
 static int32_t	multipleParams = 0;
 
 static uint8_t	buff[2][BUFFER_SIZE] = {};					// Two buffers for MIDI sending, alternately used
@@ -54,7 +51,7 @@ void MSG_CheckUSB(void)			// every 200 ms
     {
 	    if (midiUSBConfigured == 0)
 		{
-			//DBG_Led_Usb_Off();
+			// DBG_Led_Usb_Off();
 			USB_MIDI_DropMessages(0);
 		}
 
@@ -64,7 +61,7 @@ void MSG_CheckUSB(void)			// every 200 ms
 	{
 	    if (midiUSBConfigured == 1)
 		{
-			//DBG_Led_Usb_On();
+			// DBG_Led_Usb_On();
 			USB_MIDI_DropMessages(1);
 		}
 
@@ -97,131 +94,6 @@ void MSG_SendMidiBuffer(void)
 		}
 
 		buf = 0;		/// Achtung - damit gibt es beim Scheitern keinen zweiten Sendeversuch !!! Wir beobachten die Error-LED
-	}
-}
-
-
-/******************************************************************************/
-/**  @brief  MSG_RefreshAddresses
- *   Resets the last address used for comparison and ensures that the next
- *   address messages will not be suppressed by redundancy checking. When this
- *   function is called regularily, the redundant address messages can be
- *   helpful for debugging.
-*******************************************************************************/
-
-void MSG_RefreshAddresses(void)
-{
-	oldVoice = -1;
-	oldParameter = -1;
-}
-
-
-/*****************************************************************************
-*	@brief 	MSG_SelectVoice
-*   @param  v: Id (14 bits) of a single voice or first of multiple voices
-******************************************************************************/
-
-void MSG_SelectVoice(uint32_t v)
-{
-	// if ((multipleVoices == 1) || (v != oldVoice))						// avoid re-selecting the same single voice
-	// {
-		if (v > 0x3FFE)
-		{
-			v = 0x3FFE;														// clip to 14 bits (0x3FFF = All)
-		}
-
-		buff[writeBuffer][buf++] = 0x08;									// MIDI status 8
-		buff[writeBuffer][buf++] = 0x80;									// MIDI status 8, MIDI channel 0  (V)
-		buff[writeBuffer][buf++] = v >> 7;									// first 7 bits
-		buff[writeBuffer][buf++] = v & 0x7F;								// second 7 bits
-
-		if (buf == BUFFER_SIZE)
-		{
-			MSG_SendMidiBuffer();
-		}
-
-		oldVoice = v;
-
-		multipleVoices = 0;
-	// }
-}
-
-
-/*****************************************************************************
-*	@brief  MSG_SelectAllVoices
-*   Selecting voice number 0x3FFF will select all voices.
-******************************************************************************/
-
-void MSG_SelectAllVoices()
-{
-	buff[writeBuffer][buf++] = 0x08;										// MIDI status 8
-	buff[writeBuffer][buf++] = 0x80;										// MIDI status 8, MIDI channel 0  (VA)
-	buff[writeBuffer][buf++] = 0x7F;										// first 7 bits
-	buff[writeBuffer][buf++] = 0x7F;										// second 7 bits
-
-	if (buf == BUFFER_SIZE)
-	{
-		MSG_SendMidiBuffer();
-	}
-
-	multipleVoices = 1;
-}
-
-
-/*****************************************************************************
-*	@brief 	MSG_SelectMultipleVoices
-*   @param  v_last: Id (14 bits) of the last of multiple voices
-******************************************************************************/
-
-void MSG_SelectMultipleVoices(uint32_t v_last)
-{
-	if (multipleVoices == 0)
-	{
-		if (v_last > 0x3FFE)
-		{
-			v_last = 0x3FFE;													// clip to 14 bits (0x3FFF = All)
-		}
-
-		buff[writeBuffer][buf++] = 0x09;										// MIDI status 9
-		buff[writeBuffer][buf++] = 0x90;										// MIDI status 9, MIDI channel 0  (VM)
-		buff[writeBuffer][buf++] = v_last >> 7;									// first 7 bits
-		buff[writeBuffer][buf++] = v_last & 0x7F;								// second 7 bits
-
-		if (buf == BUFFER_SIZE)
-		{
-			MSG_SendMidiBuffer();
-		}
-
-		multipleVoices = 1;
-	}
-}
-
-
-/*****************************************************************************
-*	@brief 	MSG_AddVoice
-*   @param  v: Id (14 bits) of the additional voice to be selected
-******************************************************************************/
-
-void MSG_AddVoice(uint32_t v)
-{
-	if (v != oldVoice)													// repeating the same selection would be redundant
-	{
-		if (v > 0x3FFE)
-		{
-			v = 0x3FFE;														// clip to 14 bits (0x3FFF = All)
-		}
-
-		buff[writeBuffer][buf++] = 0x0A;									// MIDI status A
-		buff[writeBuffer][buf++] = 0xA0;									// MIDI status A, MIDI channel 0  (V+)
-		buff[writeBuffer][buf++] = v >> 7;									// first 7 bits
-		buff[writeBuffer][buf++] = v & 0x7F;								// second 7 bits
-
-		if (buf == BUFFER_SIZE)
-		{
-			MSG_SendMidiBuffer();
-		}
-
-		multipleVoices = 1;
 	}
 }
 
@@ -259,27 +131,6 @@ void MSG_SelectParameter(uint32_t p)
 
 
 /*****************************************************************************
-*	@brief  MSG_SelectAllParameters
-*   Selecting parameter number 0x3FFF will select all parameters.
-*******************************************************************************/
-
-void MSG_SelectAllParameters()
-{
-	buff[writeBuffer][buf++] = 0x08;											// MIDI status 8
-	buff[writeBuffer][buf++] = 0x81;											// MIDI status 8, MIDI channel 1  (PA)
-	buff[writeBuffer][buf++] = 0x7F;											// first 7 bits
-	buff[writeBuffer][buf++] = 0x7F;											// second 7 bits
-
-	if (buf == BUFFER_SIZE)
-	{
-		MSG_SendMidiBuffer();
-	}
-
-	multipleParams = 1;
-}
-
-
-/*****************************************************************************
 *	@brief  MSG_SelectMultipleParameters
 *   @param  p_last: Id (14 bits) of the last of multiple parameters
 ******************************************************************************/
@@ -297,35 +148,6 @@ void MSG_SelectMultipleParameters(uint32_t p_last)
 		buff[writeBuffer][buf++] = 0x91;								// MIDI status 9, MIDI channel 1  (PM)
 		buff[writeBuffer][buf++] = p_last >> 7;							// first 7 bits
 		buff[writeBuffer][buf++] = p_last & 0x7F;						// second 7 bits
-
-		if (buf == BUFFER_SIZE)
-		{
-			MSG_SendMidiBuffer();
-		}
-
-		multipleParams = 1;
-	}
-}
-
-
-/*****************************************************************************
-*	@brief  MSG_AddParameter
-*   @param  p: Id (14 bits) of the additional parameter to be selected
-******************************************************************************/
-
-void MSG_AddParameter(uint32_t p)
-{
-	if (p != oldParameter)											// repeating the same selection would be redundant
-	{
-		if (p > 0x3FFE)
-		{
-			p = 0x3FFE;													// clip to 14 bits (0x3FFF = All)
-		}
-
-		buff[writeBuffer][buf++] = 0x0A;								// MIDI status A
-		buff[writeBuffer][buf++] = 0xA1;								// MIDI status A, MIDI channel 1  (P+)
-		buff[writeBuffer][buf++] = p >> 7;								// first 7 bits
-		buff[writeBuffer][buf++] = p & 0x7F;							// second 7 bits
 
 		if (buf == BUFFER_SIZE)
 		{
@@ -583,27 +405,6 @@ void PreloadMode(uint32_t m)
 
 
 /*****************************************************************************
-* @brief	MSG_KeyPreload - enables the Preload mode for KeyDown/Up
-******************************************************************************/
-
-void MSG_KeyPreload(void)
-{
-	PreloadMode(257);
-}
-
-
-/*****************************************************************************
-* @brief	MSG_DisablePreload - disables the Preload mode: a D message will
-* immediately start the transition
-******************************************************************************/
-
-void MSG_DisablePreload(void)
-{
-	PreloadMode(0);
-}
-
-
-/*****************************************************************************
 * @brief	MSG_EnablePreload - enables the Preload mode: the transition will
 * start when the Apply message arrives
 ******************************************************************************/
@@ -626,8 +427,8 @@ void MSG_ApplyPreloadedValues(void)
 
 
 /*****************************************************************************
-* @brief	MSG_Reset -
-*
+* @brief	MSG_Reset - triggers different type of audio resets
+*           mode = 0: flush,  mode = 1: env stop,  mode = 2: dsp reset (panic)
 ******************************************************************************/
 
 void MSG_Reset(uint32_t mode)
@@ -642,4 +443,3 @@ void MSG_Reset(uint32_t mode)
 		MSG_SendMidiBuffer();
 	}
 }
-

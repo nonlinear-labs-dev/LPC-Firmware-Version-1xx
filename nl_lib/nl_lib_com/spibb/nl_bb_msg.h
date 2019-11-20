@@ -3,8 +3,8 @@
  *
  *  Created on: 21.01.2015
  *      Author: ssc
- *	last changed: 2019-10-32  KSTR
- *	- SW_VERSION  102
+ *	last changed: 2019-11-20  KSTR
+ *	- SW_VERSION  111
  * */
 
 #ifndef NL_DRV_NL_BB_MSG_H_
@@ -68,7 +68,7 @@
 
 //===========================
 
-#define SW_VERSION 102
+#define SW_VERSION 111
 
 //===========================
 
