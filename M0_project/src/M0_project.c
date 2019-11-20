@@ -13,13 +13,7 @@
 
 #include "sys/delays.h"
 
-#ifdef C15_VERSION_4
-	#include "boards/emphase_v4.h"
-#elif defined C15_VERSION_5
-	#include "boards/emphase_v5.h"
-#else
-	#error "No version defined."
-#endif
+#include "boards/emphase_v5.h"
 
 #include "ipc/emphase_ipc.h"
 
@@ -180,25 +174,10 @@ void Scheduler(void)
 			SPI_DMA_SwitchMode(ESPI_MODE_ATT_DOUT);
 			NL_GPDMA_Poll();
 
-#ifdef C15_VERSION_4
-			uint8_t pullResistorsValue = 0;
-			pullResistorsValue  =  (uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_4_PULLR_TO_TIP);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_4_PULLR_TO_RING) << 1);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_3_PULLR_TO_TIP)  << 2);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_3_PULLR_TO_RING) << 3);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_2_PULLR_TO_TIP)  << 4);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_2_PULLR_TO_RING) << 5);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_1_PULLR_TO_TIP)  << 6);
-			pullResistorsValue |= ((uint8_t) Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_1_PULLR_TO_RING) << 7);
-			ESPI_DEV_Pedals_PullResistors_SetValue(pullResistorsValue);
-#elif defined C15_VERSION_5
 			ESPI_DEV_Pedals_SetPedalState( 1, (uint8_t)Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_1_STATE) );
 			ESPI_DEV_Pedals_SetPedalState( 2, (uint8_t)Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_2_STATE) );
 			ESPI_DEV_Pedals_SetPedalState( 3, (uint8_t)Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_3_STATE) );
 			ESPI_DEV_Pedals_SetPedalState( 4, (uint8_t)Emphase_IPC_PlayBuffer_Read(EMPHASE_IPC_PEDAL_4_STATE) );
-#else
-	#error "No version defined."
-#endif
 
 			ESPI_DEV_Pedals_PullResistors_EspiSendIfChanged();
 
@@ -304,14 +283,7 @@ void Scheduler(void)
 
 int main(void)
 {
-#ifdef C15_VERSION_4
-	EMPHASE_V4_M0_Init();
-#elif defined C15_VERSION_5
 	EMPHASE_V5_M0_Init();
-#else
-	#error "No version defined."
-#endif
-
 
 	Emphase_IPC_M0_Init();
 

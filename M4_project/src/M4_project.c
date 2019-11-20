@@ -10,11 +10,7 @@
 #include "sys/nl_coos.h"
 #include "sys/delays.h"
 
-#ifdef C15_VERSION_5
-	#include "boards/emphase_v5.h"
-#else
-	#error "Incorrect version defined. Only C15_VERSION_5 is supported at the moment"
-#endif
+#include "boards/emphase_v5.h"
 
 
 #include "drv/nl_gpio.h"
@@ -116,14 +112,7 @@ void Task_TestBbbLpc(void)
 void Init(void)
 {
 	/* board */
-
-#ifdef C15_VERSION_4
-    EMPHASE_V4_M4_Init();
-#elif defined C15_VERSION_5
 	EMPHASE_V5_M4_Init();
-#else
-	#error "No version defined."
-#endif
 
 	/* supervisor */
 	SUP_Init();
