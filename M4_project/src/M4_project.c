@@ -177,7 +177,6 @@ void Init(void)
     COOS_Task_Add(MSG_CheckUSB,		105, 1600);	// every 200 ms, checking if the USB connection to the ePC or the ePC is still working
     COOS_Task_Add(DBG_Process,      95, 4800);	// every 600 ms
     COOS_Task_Add(SUP_Process,      55, SUP_PROCCESS_TIMESLICE*8);
-    COOS_Task_Add(HBT_Process,      45, HBT_PROCCESS_TIMESLICE*8);
 
     /* M0 */
     CPU_M0_Init();

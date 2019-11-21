@@ -12,9 +12,7 @@
 
 #include <stdint.h>
 
-#define HBT_PROCCESS_TIMESLICE	(100)	// 100ms is the LPC heartbeat interval
 
 void HBT_MidiReceive(uint8_t* buff, uint32_t len);
-void HBT_Process(void);
 
 #endif /* nl_heartbeat.h */
