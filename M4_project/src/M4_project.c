@@ -9,9 +9,7 @@
 
 #include "sys/nl_coos.h"
 #include "sys/delays.h"
-
 #include "boards/emphase_v5.h"
-
 
 #include "drv/nl_gpio.h"
 #include "drv/nl_dbg.h"
