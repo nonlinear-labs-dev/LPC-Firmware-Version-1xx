@@ -48,17 +48,11 @@ void HBT_MidiReceive(uint8_t *buff, uint32_t len)
 		{
 		  uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
 		  BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *) &chainHeartbeat);
-		  audioEngineHeartBeat++;
+		  lpcHeartBeat++;
 		}
 	}
     len -= 3;
   }
-}
-
-
-void HBT_Process(void)
-{
-	lpcHeartBeat++;
 }
 
 // EOF
