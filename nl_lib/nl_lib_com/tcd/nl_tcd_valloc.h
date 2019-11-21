@@ -18,7 +18,7 @@
 
 #define VALLOC_NUM_KEYS 61
 
-#define NUM_VOICES 20												// max. number of voices (Array-size)
+#define NUM_VOICES 24												// max. number of voices (Array-size)
 
 
 //------- public functions

@@ -26,7 +26,6 @@
 #include "spibb/nl_bb_msg.h"
 
 #include "tcd/nl_tcd_valloc.h"
-#include "tcd/nl_tcd_env.h"
 #include "tcd/nl_tcd_adc_work.h"
 #include "tcd/nl_tcd_poly.h"
 #include "tcd/nl_tcd_expon.h"
@@ -158,7 +157,6 @@ void Init(void)
 	/* TCD */
 	EXPON_Init();
 	VALLOC_Init(NUM_VOICES);
-	ENV_Init();
 	POLY_Init();
 	PARAM_WORK_Init();
 
@@ -169,7 +167,6 @@ void Init(void)
     COOS_Task_Add(USB_MIDI_Poll,    15,    1);	// every 125 us, same time grid as in USB 2.0
 
     COOS_Task_Add(VALLOC_Process,   20,    1);	// every 125 us, reading and applying keybed events
-    COOS_Task_Add(ENV_Process,      25,    1);	// every 125 us, envelope processing
 
     COOS_Task_Add(SPI_BB_Polling,   30,    1);	// every 125 us, checking the buffer with messages from the BBB and driving the LPC-BB "heartbeat"
 

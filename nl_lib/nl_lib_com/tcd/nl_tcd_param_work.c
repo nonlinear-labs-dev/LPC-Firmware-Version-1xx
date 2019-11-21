@@ -8,7 +8,6 @@
 
 #include "tcd/nl_tcd_param_work.h"
 #include "tcd/nl_tcd_poly.h"
-#include "tcd/nl_tcd_env.h"
 #include "tcd/nl_tcd_msg.h"
 #include "tcd/nl_tcd_adc_work.h"
 #include "tcd/nl_tcd_expon.h"
@@ -35,7 +34,9 @@ static uint16_t mcTarget[NUM_MCS][NUM_MC_TARGETS];		// Ids of the target paramet
 
 
 static uint32_t transitionTime;
-static uint32_t editSmoothingTime;
+static uint32_t updateTransitionTime;
+static uint32_t smoothingTime;
+static uint32_t updateSmoothingTime;
 static uint32_t usingTransitionTime;
 static uint32_t usingGlitchSuppression;
 
@@ -256,7 +257,9 @@ void PARAM_WORK_Init(void)
 	paramValue[PARAM_ID_PITCHBEND] = 8000;
 
 	transitionTime = 100; 		/// default: 30 ms - Fehler in Exp-Curve ???
-	editSmoothingTime = 800; 	// default: 10 ms
+	updateTransitionTime = 0;
+	smoothingTime = 800; 		// default: 10 ms
+	updateSmoothingTime = 0;
 	usingTransitionTime = 0;
 	usingGlitchSuppression = 1;
 }
@@ -338,7 +341,6 @@ static void ProcessBasicParam(uint32_t paramId, int32_t paramVal)
 
 		case PARAM_ID_UNISON_VOICES:				// number of Unison voices, applied in POLY and VALLOC and sent to the TCD renderer
 			POLY_SetUnisonVoices(paramVal);
-			MSG_Reset(1);							// reset the envelopes
 			MSG_SelectParameter(paramId);
 			MSG_SetDestination(paramVal);
 			break;
@@ -687,10 +689,12 @@ void PARAM_Set(uint32_t paramId, uint32_t paramVal)
 	{
 		ADC_WORK_Suspend();
 
-		if (usingTransitionTime == 1)
+		if ( (usingTransitionTime == 1) || (updateSmoothingTime == 1) )
 		{
-			SetAllTimes(editSmoothingTime);			// switching from transition smoothing to edit smoothing
+			SetAllTimes(smoothingTime);			// switching from transition smoothing to edit smoothing
+
 			usingTransitionTime = 0;
+			updateSmoothingTime = 0;
 		}
 
 		switch (paramId)
@@ -796,10 +800,12 @@ void PARAM_Set2(uint32_t paramId, uint32_t paramVal1, uint32_t paramVal2)
 	{
 		ADC_WORK_Suspend();
 
-		if (usingTransitionTime == 1)
+		if ( (usingTransitionTime == 1) || (updateSmoothingTime == 1) )
 		{
-			SetAllTimes(editSmoothingTime);			// switching from transition smoothing to edit smoothing
+			SetAllTimes(smoothingTime);			// switching from transition smoothing to edit smoothing
+
 			usingTransitionTime = 0;
+			updateSmoothingTime = 0;
 		}
 
 		if (paramVal1 != paramValue[paramId])
@@ -827,10 +833,17 @@ void PARAM_ApplyPreset(uint16_t numParams, uint16_t* data)
 
 	ADC_WORK_Suspend();
 
-	if (usingTransitionTime == 0)
+	if ( (usingTransitionTime == 0) || (updateTransitionTime == 1) )
 	{
 		SetAllTimes(transitionTime);				// switching from edit smoothing to transition smoothing
+
 		usingTransitionTime = 1;
+		updateTransitionTime = 0;
+	}
+
+	if (usingGlitchSuppression)
+	{
+		MSG_Reset(0);								// flushing the delays of the audio engine to avoid glitches
 	}
 
 	MSG_EnablePreload();
@@ -1015,11 +1028,6 @@ void PARAM_ApplyPreset(uint16_t numParams, uint16_t* data)
 	ADC_WORK_Resume();
 
 	MSG_ApplyPreloadedValues();			/// war vorher kurz vor dem Fade-In
-
-	if (usingGlitchSuppression)
-	{
-		ENV_StartWaitForFadeOut();		// fade-out, flushing, preload apply and fade-in is delayed by the Process() loop of the envelopes
-	}
 }
 
 
@@ -1032,7 +1040,7 @@ void PARAM_SetTransitionTime(uint32_t time)
 
 	if (time != transitionTime)
 	{
-		usingTransitionTime = 0;		// makes sure that it will be applied with the next preset recall
+		updateTransitionTime = 1;		// makes sure that it will be applied with the next preset recall
 
 		transitionTime = time;
 	}
@@ -1043,11 +1051,11 @@ void PARAM_SetEditSmoothingTime(uint32_t time)
 {
 	time = (9830 * time) >> 14;  	// (9600 * time) / 16000  //  linear: 0...16000 => 0...200 ms in Samples
 
-	if (time != editSmoothingTime)
+	if (time != smoothingTime)
 	{
-		usingTransitionTime = 1;		// makes sure that it will be applied with the next parameter editing
+		updateSmoothingTime = 1;		// makes sure that it will be applied with the next parameter editing
 
-		editSmoothingTime = time;
+		smoothingTime = time;
 	}
 }
 

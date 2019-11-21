@@ -34,15 +34,9 @@
 void MSG_CheckUSB(void);
 void MSG_SendMidiBuffer(void);
 
-void MSG_SelectVoice(uint32_t v);
-void MSG_SelectMultipleVoices(uint32_t v_last);
-void MSG_SelectAllVoices(void);
-void MSG_AddVoice(uint32_t v);
 
 void MSG_SelectParameter(uint32_t p);
 void MSG_SelectMultipleParameters(uint32_t p_last);
-void MSG_SelectAllParameters(void);
-void MSG_AddParameter(uint32_t p);
 
 void MSG_SetTime(uint32_t t);
 
@@ -55,12 +49,8 @@ void MSG_KeyUp(uint32_t vel);
 
 void MSG_Reset(uint32_t mode);
 
-void MSG_KeyPreload(void);							// enables the Preload/List mode for KeyDown and KeyUp
-void MSG_DisablePreload(void);						// disables the Preload mode: a D message immediately starts a transition
 void MSG_EnablePreload(void);						// enables the Preload mode: the transition will start when the Apply message arrives
 void MSG_ApplyPreloadedValues(void);				// applies preloaded D values and starts the transition(s)
-
-void MSG_RefreshAddresses(void);						// the following messages will include voice and parameter addresses
 
 
 #endif /* NL_TCD_MSG_H_ */

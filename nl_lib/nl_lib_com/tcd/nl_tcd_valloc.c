@@ -12,8 +12,8 @@
 #include "nl_tcd_valloc.h"
 
 #include "ipc/emphase_ipc.h"
-#include "nl_tcd_env.h"
 #include "nl_tcd_poly.h"
+#include "nl_tcd_msg.h"
 
 
 //------- modul local variables
@@ -97,7 +97,6 @@ void VALLOC_Process(void)
 			{
 				if (voiceState[v] == k)						// finding a voice that is assigned to the key
 				{
-					/// ENV_Release(v, keyEvent[i].timeInUs);
 					POLY_KeyUp(v, keyEvent[i].timeInUs);
 
 					nextReleased[youngestReleased] = v;  		// the last youngest released voice gets the pointer to this voice
@@ -161,4 +160,6 @@ void VALLOC_Process(void)
 			voiceState[v] = k;								// updating the voice state
 		}
 	}
+
+	MSG_SendMidiBuffer();
 }
