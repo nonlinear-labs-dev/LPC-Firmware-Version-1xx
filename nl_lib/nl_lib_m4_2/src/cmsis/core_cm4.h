@@ -31,6 +31,10 @@
 #ifndef __CORE_CM4_H_GENERIC
 #define __CORE_CM4_H_GENERIC
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
+
 /** \page CMSIS_MISRA_Exceptions  MISRA-C:2004 Compliance Exceptions
   CMSIS violates the following MISRA-C:2004 rules:
 
@@ -1751,6 +1755,8 @@ __STATIC_INLINE int32_t ITM_CheckChar (void) {
 #endif /* __CORE_CM4_H_DEPENDANT */
 
 #endif /* __CMSIS_GENERIC */
+
+#pragma GCC diagnostic pop
 
 #ifdef __cplusplus
 }

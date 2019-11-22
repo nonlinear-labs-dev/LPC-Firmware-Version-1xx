@@ -60,11 +60,13 @@
 
 //----- Request Ids:
 
-#define REQUEST_ID_SW_VERSION 0x0000
+#define REQUEST_ID_SW_VERSION 			0x0000
+#define REQUEST_ID_UNMUTE_STATUS 		0x0001
 
 //----- Notification Ids:
 
-#define NOTIFICATION_ID_SW_VERSION 0x0000
+#define NOTIFICATION_ID_SW_VERSION 		0x0000
+#define NOTIFICATION_ID_UNMUTE_STATUS 	0x0001
 
 //===========================
 

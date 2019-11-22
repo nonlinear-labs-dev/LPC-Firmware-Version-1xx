@@ -24,25 +24,37 @@
 
 
 
+uint16_t	SUP_unmute_status = 0;
 
 
-volatile uint16_t		midi_timeout=0;
-uint8_t					audio_engine_online = 0;
-uint8_t					override = 0;
-uint8_t					override_state = 0;
+volatile uint16_t	midi_timeout=0;
+static uint8_t		override = 0;
+static uint8_t		override_state = 0;
 
-uint8_t					unmute_state = 0;		// ==0 means muted
-uint8_t					old_unmute_state = 0xAA;
+static uint8_t		unmute_state = 0;		// ==0 means muted
+static uint8_t		old_unmute_state = 0xAA;
 
-uint8_t					step = 0;
+static uint8_t		step = 0;
+
+static uint8_t		mstate = 0xAA;
+static uint8_t		old_mstate;
+static uint8_t		high_time, low_time;
+static uint8_t		signal_timeout;
+static uint8_t		had_a_high_transition;
+static uint8_t		active_cntr;
+static uint8_t		inactive_cntr;
+static uint8_t		unknown_cntr;
 
 
-#define					PERIOD		(10)
-#define					MUTED		(3)
-#define					UNMUTED		(7)
+#define				PERIOD			(10)
+#define				MUTED			(3)
+#define				UNMUTED			(7)
+#define				ACTIVE			(UNMUTED)
+#define				INACTIVE		(MUTED)
+#define				ENOUGH_PATTERNS	(3)
 
-uint8_t					transition = MUTED;
-uint8_t					new_transition = MUTED;
+static uint8_t					transition = MUTED;
+static uint8_t					new_transition = MUTED;
 
 
 
@@ -57,7 +69,12 @@ void SUP_Config(SUP_PINS_T *sup_pins)
 
 void Set_Signalling_GPIO_Pin(uint8_t new_state)
 {
-	NL_GPIO_SetState(pins->lpc_sup_mute, new_state);
+	NL_GPIO_SetState(pins->lpc_sup_mute_request, new_state);
+}
+
+uint8_t Get_Status_GPIO_Pin(void)
+{
+	return NL_GPIO_Get(pins->lpc_sup_mute_status);
 }
 
 
@@ -66,18 +83,22 @@ void SUP_Init(void)
 	Set_Signalling_GPIO_Pin(0);
 
 	midi_timeout = 0;
-	audio_engine_online = 0;
-
 	override = 0;
 	override_state = 0;
-
 	unmute_state = 0;
 	old_unmute_state = 0xAA;
-
 	step = 0;
-
 	transition = MUTED;
 	new_transition = MUTED;
+
+	high_time = low_time = 0;
+	signal_timeout = 10;
+	mstate = 0xAA;
+	had_a_high_transition = 0;
+	active_cntr = 0;
+	inactive_cntr = 0;
+	unknown_cntr = 0;
+	SUP_unmute_status = 0;
 }
 
 
@@ -104,15 +125,29 @@ void SUP_Override_Muting(uint8_t new_unmute_state)	// effective only when enable
 
 void SUP_Process(void)
 {
+// part 1 : Transmitter
 	if (midi_timeout)
 		midi_timeout--;
 
+	SUP_unmute_status &= ~(SUP_UNMUTE_STATUS_HARDWARE_IS_VALID | SUP_UNMUTE_STATUS_HARDWARE_VALUE);
 	if (NL_GPIO_Get(pins->lpc_unmute_jumper) == 0)	// hardware jumper reads low (jumper set) ?
+	{
 		unmute_state = 1;							// 	-> force unmute
+		SUP_unmute_status |= (SUP_UNMUTE_STATUS_JUMPER_OVERRIDE | SUP_UNMUTE_STATUS_JUMPER_VALUE);
+	}
 	else if (override)								// software override ?
+	{
 		unmute_state = override_state;				//  -> use override state
-	else											// normal operation ?
+		SUP_unmute_status |= SUP_UNMUTE_STATUS_SOFTWARE_OVERRIDE;
+		SUP_unmute_status |= (unmute_state ? SUP_UNMUTE_STATUS_SOFTWARE_VALUE : 0);
+	}
+	else
+	{	// normal operation ?
 		unmute_state = (midi_timeout != 0);			//  -> unmute if midi traffic did not time out
+		SUP_unmute_status |= SUP_UNMUTE_STATUS_MIDI_DERIVED;
+		SUP_unmute_status |= (unmute_state ? SUP_UNMUTE_STATUS_MIDI_DERIVED_VALUE : 0);
+	}
+	SUP_unmute_status |= SUP_UNMUTE_STATUS_IS_VALID;
 
 	if (unmute_state != old_unmute_state)
 	{
@@ -134,5 +169,73 @@ void SUP_Process(void)
 	{
 		step = 0;
 		transition=new_transition;
+	}
+
+// Part 2 : Detector
+	old_mstate = mstate;
+	mstate = Get_Status_GPIO_Pin();
+	if ( mstate && (high_time < 127) )
+		high_time++;
+	if ( !mstate && (low_time < 127) )
+		low_time++;
+
+	if (mstate != old_mstate)		// pin transitioned
+	{
+		signal_timeout = PERIOD+2;
+		if (mstate)			// pin went high, so one cycle is over
+		{
+			if ( (high_time == ACTIVE-1 || high_time == ACTIVE || high_time == ACTIVE+1) \
+			&&   (low_time == INACTIVE-1 || low_time == INACTIVE || low_time == INACTIVE+1) )
+			{ // "active" pattern found
+				inactive_cntr = 0;
+				unknown_cntr = 0;
+				if ( active_cntr<ENOUGH_PATTERNS )
+					active_cntr++;
+				else if (active_cntr >= ENOUGH_PATTERNS)	// enough "active" patterns ?
+				{
+					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
+					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_VALUE;
+				}
+			}
+			else
+			if ( (high_time == INACTIVE-1 || high_time == INACTIVE || high_time == INACTIVE+1 ) \
+			&&   (low_time == ACTIVE-1 || low_time == ACTIVE || low_time == ACTIVE+1) )
+			{ // "inactive" pattern found
+				active_cntr = 0;
+				unknown_cntr = 0;
+				if ( inactive_cntr<ENOUGH_PATTERNS )
+					inactive_cntr++;
+				else if (inactive_cntr >= ENOUGH_PATTERNS)	// enough "inactive" patterns ?
+				{
+					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
+					SUP_unmute_status &= ~SUP_UNMUTE_STATUS_HARDWARE_VALUE;
+				}
+			}
+			else // illegal pattern found
+			{
+				active_cntr = 0;
+				inactive_cntr = 0;
+				if ( unknown_cntr<ENOUGH_PATTERNS )
+					unknown_cntr++;
+			}
+
+			high_time = 0;
+			low_time = 0;
+		}
+	}
+
+	if (signal_timeout)
+		signal_timeout--;
+	if (signal_timeout == 0)
+	{
+		signal_timeout = PERIOD+2;
+		if ( unknown_cntr<ENOUGH_PATTERNS )
+			unknown_cntr++;
+	}
+	if (unknown_cntr >= ENOUGH_PATTERNS)
+	{
+		active_cntr = 0;
+		inactive_cntr = 0;
+		SUP_unmute_status &= ~SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
 	}
 }

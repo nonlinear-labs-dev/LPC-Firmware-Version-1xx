@@ -22,7 +22,7 @@ void sendAssertionToBB(const char *ptrFunc, int line)
 	uint16_t len = strlen(txt);
 	len = MIN(len, 500);
 
-	BB_MSG_WriteMessage(BB_MSG_TYPE_ASSERTION, len/2, txt);
+	BB_MSG_WriteMessage(BB_MSG_TYPE_ASSERTION, len/2, (uint16_t *)txt);
 	BB_MSG_SendTheBuffer();
 
 

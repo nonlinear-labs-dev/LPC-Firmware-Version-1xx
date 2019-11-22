@@ -11,7 +11,10 @@
 #include "tcd/nl_tcd_param_work.h"
 #include "tcd/nl_tcd_adc_work.h"
 #include "tcd/nl_tcd_poly.h"
+#include "sup/nl_sup.h"
 #include "dbg/nl_assert.h"
+#include "drv/nl_dbg.h"
+#include "sys/nl_coos.h"
 
 #define SENDBUFFER_SIZE  510						// 16-bit words, stays below the maximum of 1020 bytes
 
@@ -75,6 +78,8 @@ int32_t BB_MSG_WriteMessage2Arg(uint16_t type, uint16_t arg0, uint16_t arg1)
 
 	if (remainingBuffer < 0)
 	{
+		DBG_Led_Error_On();
+		COOS_Task_Add(DBG_Led_Error_Off,  400,    0);
 		return -1;		// buffer is full
 	}
 
@@ -175,6 +180,8 @@ int32_t BB_MSG_SendTheBuffer(void)
 	}
 	else	// sending failed, try again later
 	{
+		DBG_Led_Error_On();
+		COOS_Task_Add(DBG_Led_Error_Off,  400,    0);
 		return -1;
 	}
 }
@@ -268,10 +275,18 @@ void BB_MSG_ReceiveCallback(uint16_t type, uint16_t length, uint16_t* data)
 	}
 	else if (type == BB_MSG_TYPE_REQUEST)
 	{
-		if (data[0] == REQUEST_ID_SW_VERSION)		// requesting the version of the LPC ("RT") software
+		switch (data[0])
 		{
-			BB_MSG_WriteMessage2Arg(BB_MSG_TYPE_NOTIFICATION, NOTIFICATION_ID_SW_VERSION, SW_VERSION);  // sending the software version to the BB
-			BB_MSG_SendTheBuffer();
+			case REQUEST_ID_SW_VERSION :
+				BB_MSG_WriteMessage2Arg(BB_MSG_TYPE_NOTIFICATION, NOTIFICATION_ID_SW_VERSION, SW_VERSION);
+				BB_MSG_SendTheBuffer();
+				break;
+			case REQUEST_ID_UNMUTE_STATUS :
+				BB_MSG_WriteMessage2Arg(NOTIFICATION_ID_UNMUTE_STATUS, NOTIFICATION_ID_UNMUTE_STATUS, SUP_unmute_status);  // sending the muting status to the BB
+				BB_MSG_SendTheBuffer();
+				break;
+			default :
+				break;
 		}
 	}
 }

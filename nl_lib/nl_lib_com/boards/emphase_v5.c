@@ -870,12 +870,25 @@ static void InitDebugPins(void)
 /*******************************************************************************
 	supervisor module
 *******************************************************************************/
-static PIN_CFG_T lpc_sup_mute = {
+static PIN_CFG_T lpc_sup_mute_req = {
 	.pinId  		= {5,6},
 	.ioType 		= PIN_TYPE_GPIO,
 	.gpioId 		= {2,15},
 	.direction		= PIN_GPIO_DIR_OUT,
 	.inputBuffer	= PIN_INBUF_OFF,
+	.glitchFilter 	= PIN_FILTER_ON,
+	.slewRate 		= PIN_SRATE_SLOW,
+	.pullDown 		= PIN_PDN_ON,
+	.pullUp 		= PIN_PUP_OFF,
+	.function		= 0
+};
+
+static PIN_CFG_T lpc_sup_mute_ack = {
+	.pinId  		= {5,7},
+	.ioType 		= PIN_TYPE_GPIO,
+	.gpioId 		= {2,7},
+	.direction		= PIN_GPIO_DIR_IN,
+	.inputBuffer	= PIN_INBUF_ON,
 	.glitchFilter 	= PIN_FILTER_ON,
 	.slewRate 		= PIN_SRATE_SLOW,
 	.pullDown 		= PIN_PDN_ON,
@@ -897,14 +910,16 @@ static PIN_CFG_T lpc_unmute_jumper = {
 };
 
 static SUP_PINS_T sup_pins = {
-	.lpc_sup_mute 		= &lpc_sup_mute.gpioId,
-	.lpc_unmute_jumper	= &lpc_unmute_jumper.gpioId
+	.lpc_sup_mute_request 		= &lpc_sup_mute_req.gpioId,
+	.lpc_sup_mute_status		= &lpc_sup_mute_ack.gpioId,
+	.lpc_unmute_jumper			= &lpc_unmute_jumper.gpioId
 };
 
 
 static void InitSupPins(void)
 {
-	PIN_Config(&lpc_sup_mute);
+	PIN_Config(&lpc_sup_mute_req);
+	PIN_Config(&lpc_sup_mute_ack);
 	PIN_Config(&lpc_unmute_jumper);
 
 	SUP_Config(&sup_pins);

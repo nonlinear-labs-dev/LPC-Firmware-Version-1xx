@@ -47,7 +47,8 @@ void HBT_MidiReceive(uint8_t *buff, uint32_t len)
 		if(buff[0] == 0xA2)
 		{
 		  uint64_t chainHeartbeat = audioEngineHeartBeat + lpcHeartBeat;
-		  BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *) &chainHeartbeat);
+		  if (BB_MSG_WriteMessage(BB_MSG_TYPE_HEARTBEAT, 4, (uint16_t *) &chainHeartbeat) != -1)
+			  BB_MSG_SendTheBuffer();
 		  lpcHeartBeat++;
 		}
 	}

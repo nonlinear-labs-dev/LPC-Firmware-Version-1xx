@@ -31,6 +31,9 @@
 #ifndef __CORE_CM0_H_GENERIC
 #define __CORE_CM0_H_GENERIC
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
 /** \page CMSIS_MISRA_Exceptions  MISRA-C:2004 Compliance Exceptions
   CMSIS violates the following MISRA-C:2004 rules:
 
@@ -554,7 +557,6 @@ __STATIC_INLINE void NVIC_ClearPendingIRQ(IRQn_Type IRQn)
   NVIC->ICPR[0] = (1 << ((uint32_t)(IRQn) & 0x1F)); /* Clear pending interrupt */
 }
 
-
 /** \brief  Set Interrupt Priority
 
     The function sets the priority of an interrupt.
@@ -655,7 +657,7 @@ __STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
 
 /*@} end of CMSIS_Core_SysTickFunctions */
 
-
+#pragma GCC diagnostic pop
 
 
 #endif /* __CORE_CM0_H_DEPENDANT */
