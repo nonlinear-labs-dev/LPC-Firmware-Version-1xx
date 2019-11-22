@@ -4,15 +4,27 @@
     @brief    	Communication to Supervisor uC, for audio muting
     @author		KSTR
 
-    Incoming Midi events over USB are intepreted as "audio engine alive".
+    Incoming Midi events over USB are interpreted as "audio engine alive".
     Any such event triggers a monoflop with 120ms timeout. To keep the
     monoflop high the incoming events should occur at least every 100ms.
 
-    Whenever this monoflop changes state, the new state is signalled to
+    Whenever this monoflop changes state, the new state is signaled to
     the Supervisor.
     This signal is a 100ms square wave with varying duty cycle.
     - 30ms high, 70ms low : LOW  (MUTE request)
     - 70ms high, 30ms low : HIGH (UNMUTE request)
+
+    The state signaled to the Supervisor may be overridden by :
+    - a hardware test jumper that forces unmuting, highest priority
+    - software functions, lower priority
+
+    The Supervisor sends back its actual state of the muting relays with
+    the same signaling mechanism.
+
+    The current state of the muting is accessible via a function :
+    - actual mute state as reported by the Supervisor, and if it is valid at all
+    - any overrides and their state
+    The return value can be used to signal the state to the BB
 
 *******************************************************************************/
 
@@ -23,9 +35,7 @@
 #include "drv/nl_gpio.h"
 
 
-
-uint16_t	SUP_unmute_status = 0;
-
+static uint16_t		unmute_status_bits = 0;	// bit field
 
 volatile uint16_t	midi_timeout=0;
 static uint8_t		override = 0;
@@ -53,8 +63,8 @@ static uint8_t		unknown_cntr;
 #define				INACTIVE		(MUTED)
 #define				ENOUGH_PATTERNS	(3)
 
-static uint8_t					transition = MUTED;
-static uint8_t					new_transition = MUTED;
+static uint8_t		transition = MUTED;
+static uint8_t		new_transition = MUTED;
 
 
 
@@ -65,12 +75,17 @@ void SUP_Config(SUP_PINS_T *sup_pins)
 	pins = sup_pins;
 }
 
+uint16_t SUP_GetUnmuteStatusBits(void)
+{
+	return unmute_status_bits;
+}
 
 
 void Set_Signalling_GPIO_Pin(uint8_t new_state)
 {
 	NL_GPIO_SetState(pins->lpc_sup_mute_request, new_state);
 }
+
 
 uint8_t Get_Status_GPIO_Pin(void)
 {
@@ -98,7 +113,7 @@ void SUP_Init(void)
 	active_cntr = 0;
 	inactive_cntr = 0;
 	unknown_cntr = 0;
-	SUP_unmute_status = 0;
+	unmute_status_bits = 0;
 }
 
 
@@ -111,14 +126,20 @@ void SUP_MidiTrafficDetected(void)
 
 
 
-void SUP_Enable_Override_Muting(uint8_t on_off)
+void Enable_Override_Muting(uint8_t on_off)
 {
 	override = ( on_off != 0 );
 }
 
-void SUP_Override_Muting(uint8_t new_unmute_state)	// effective only when enabled
+void Override_Muting(uint8_t new_unmute_state)	// effective only when enabled
 {
 	override_state = ( new_unmute_state != 0 );
+}
+
+void SUP_SetMuteOverride(uint32_t mode)
+{
+	Override_Muting(mode & SUP_UNMUTE_STATUS_SOFTWARE_VALUE);
+	Enable_Override_Muting(mode & SUP_UNMUTE_STATUS_SOFTWARE_OVERRIDE);
 }
 
 
@@ -129,25 +150,26 @@ void SUP_Process(void)
 	if (midi_timeout)
 		midi_timeout--;
 
-	SUP_unmute_status &= ~(SUP_UNMUTE_STATUS_HARDWARE_IS_VALID | SUP_UNMUTE_STATUS_HARDWARE_VALUE);
+	uint16_t bits = (unmute_status_bits & ~(SUP_UNMUTE_STATUS_HARDWARE_IS_VALID | SUP_UNMUTE_STATUS_HARDWARE_VALUE));
 	if (NL_GPIO_Get(pins->lpc_unmute_jumper) == 0)	// hardware jumper reads low (jumper set) ?
 	{
 		unmute_state = 1;							// 	-> force unmute
-		SUP_unmute_status |= (SUP_UNMUTE_STATUS_JUMPER_OVERRIDE | SUP_UNMUTE_STATUS_JUMPER_VALUE);
+		bits |= (SUP_UNMUTE_STATUS_JUMPER_OVERRIDE | SUP_UNMUTE_STATUS_JUMPER_VALUE);
 	}
 	else if (override)								// software override ?
 	{
 		unmute_state = override_state;				//  -> use override state
-		SUP_unmute_status |= SUP_UNMUTE_STATUS_SOFTWARE_OVERRIDE;
-		SUP_unmute_status |= (unmute_state ? SUP_UNMUTE_STATUS_SOFTWARE_VALUE : 0);
+		bits |= SUP_UNMUTE_STATUS_SOFTWARE_OVERRIDE;
+		bits |= (unmute_state ? SUP_UNMUTE_STATUS_SOFTWARE_VALUE : 0);
 	}
 	else
 	{	// normal operation ?
 		unmute_state = (midi_timeout != 0);			//  -> unmute if midi traffic did not time out
-		SUP_unmute_status |= SUP_UNMUTE_STATUS_MIDI_DERIVED;
-		SUP_unmute_status |= (unmute_state ? SUP_UNMUTE_STATUS_MIDI_DERIVED_VALUE : 0);
+		bits |= SUP_UNMUTE_STATUS_MIDI_DERIVED;
+		bits |= (unmute_state ? SUP_UNMUTE_STATUS_MIDI_DERIVED_VALUE : 0);
 	}
-	SUP_unmute_status |= SUP_UNMUTE_STATUS_IS_VALID;
+	bits |= SUP_UNMUTE_STATUS_IS_VALID;
+	unmute_status_bits = bits;
 
 	if (unmute_state != old_unmute_state)
 	{
@@ -193,8 +215,8 @@ void SUP_Process(void)
 					active_cntr++;
 				else if (active_cntr >= ENOUGH_PATTERNS)	// enough "active" patterns ?
 				{
-					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
-					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_VALUE;
+					unmute_status_bits |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
+					unmute_status_bits |= SUP_UNMUTE_STATUS_HARDWARE_VALUE;
 				}
 			}
 			else
@@ -207,8 +229,8 @@ void SUP_Process(void)
 					inactive_cntr++;
 				else if (inactive_cntr >= ENOUGH_PATTERNS)	// enough "inactive" patterns ?
 				{
-					SUP_unmute_status |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
-					SUP_unmute_status &= ~SUP_UNMUTE_STATUS_HARDWARE_VALUE;
+					unmute_status_bits |= SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
+					unmute_status_bits &= ~SUP_UNMUTE_STATUS_HARDWARE_VALUE;
 				}
 			}
 			else // illegal pattern found
@@ -221,8 +243,8 @@ void SUP_Process(void)
 
 			high_time = 0;
 			low_time = 0;
-		}
-	}
+		} // pin went high, so one cycle is over
+	} // pin transitioned
 
 	if (signal_timeout)
 		signal_timeout--;
@@ -236,6 +258,6 @@ void SUP_Process(void)
 	{
 		active_cntr = 0;
 		inactive_cntr = 0;
-		SUP_unmute_status &= ~SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
+		unmute_status_bits &= ~SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
 	}
 }

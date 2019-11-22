@@ -12,6 +12,12 @@
 
 #include "stdint.h"
 
+//===========================
+
+#define SW_VERSION 111
+
+//===========================
+
 #define BB_MSG_TYPE_PRESET_DIRECT 0x0100
 #define BB_MSG_TYPE_MORPH_SET_A 0x0200
 #define BB_MSG_TYPE_MORPH_SET_B 0x0300
@@ -57,6 +63,7 @@
 #define SETTING_ID_PITCHBEND_ON_PRESSED_KEYS 32  // OFF = 0, ON = 1
 #define SETTING_ID_EDIT_SMOOTHING_TIME 33        // ==> tTcdRange(0, 16000)
 #define SETTING_ID_PRESET_GLITCH_SUPPRESSION 34  // OFF = 0, ON = 1
+#define SETTING_ID_SOFTWARE_MUTE_OVERRIDE 35     // Software Mute Override
 
 //----- Request Ids:
 
@@ -68,11 +75,6 @@
 #define NOTIFICATION_ID_SW_VERSION 		0x0000
 #define NOTIFICATION_ID_UNMUTE_STATUS 	0x0001
 
-//===========================
-
-#define SW_VERSION 111
-
-//===========================
 
 int32_t BB_MSG_WriteMessage(uint16_t type, uint16_t length, uint16_t *data);
 int32_t BB_MSG_WriteMessage2Arg(uint16_t type, uint16_t arg0, uint16_t arg1);

@@ -268,6 +268,9 @@ void BB_MSG_ReceiveCallback(uint16_t type, uint16_t length, uint16_t* data)
 			case 34:										// Glitch Suppression
 				PARAM_SetGlitchSuppression(data[1]);			// 0: off, 1: on
 				break;
+			case 35 :										// enable/disable Software Mute Override and value
+				SUP_SetMuteOverride(data[1]);				// see sup/nl_sup.h for bit patterns
+				break;
 			default:
 				/// Error
 				break;
@@ -277,12 +280,12 @@ void BB_MSG_ReceiveCallback(uint16_t type, uint16_t length, uint16_t* data)
 	{
 		switch (data[0])
 		{
-			case REQUEST_ID_SW_VERSION :
+			case REQUEST_ID_SW_VERSION :		// sending the firmware version to the BB
 				BB_MSG_WriteMessage2Arg(BB_MSG_TYPE_NOTIFICATION, NOTIFICATION_ID_SW_VERSION, SW_VERSION);
 				BB_MSG_SendTheBuffer();
 				break;
-			case REQUEST_ID_UNMUTE_STATUS :
-				BB_MSG_WriteMessage2Arg(NOTIFICATION_ID_UNMUTE_STATUS, NOTIFICATION_ID_UNMUTE_STATUS, SUP_unmute_status);  // sending the muting status to the BB
+			case REQUEST_ID_UNMUTE_STATUS :		// sending the muting status to the BB
+				BB_MSG_WriteMessage2Arg(NOTIFICATION_ID_UNMUTE_STATUS, NOTIFICATION_ID_UNMUTE_STATUS, SUP_GetUnmuteStatusBits());
 				BB_MSG_SendTheBuffer();
 				break;
 			default :
