@@ -33,24 +33,26 @@
 #include "drv/nl_dbg.h"
 #include "drv/nl_pin.h"
 #include "drv/nl_gpio.h"
+#include "spibb/nl_bb_msg.h"
 
 
 static uint16_t		unmute_status_bits = 0;	// bit field
-
-volatile uint16_t	midi_timeout=0;
+static uint16_t		old_unmute_status_bits = 0xAAAA;	// bit field
 static uint8_t		override = 0;
 static uint8_t		override_state = 0;
 
-static uint8_t		unmute_state = 0;		// ==0 means muted
-static uint8_t		old_unmute_state = 0xAA;
 
+// signal transmitter variables
+static uint8_t		requested_unmute_state = 0;		// ==0 means muted
+static uint8_t		old_requested_unmute_state = 0xAA;
+static uint16_t		midi_timeout=0;
 static uint8_t		step = 0;
 
-static uint8_t		mstate = 0xAA;
-static uint8_t		old_mstate;
+// signal detector variables
+static uint8_t		returned_mstate = 0xAA;
+static uint8_t		old_returned_mstate;
 static uint8_t		high_time, low_time;
 static uint8_t		signal_timeout;
-static uint8_t		had_a_high_transition;
 static uint8_t		active_cntr;
 static uint8_t		inactive_cntr;
 static uint8_t		unknown_cntr;
@@ -70,11 +72,13 @@ static uint8_t		new_transition = MUTED;
 
 static SUP_PINS_T* pins;
 
+// set GPIO pins use
 void SUP_Config(SUP_PINS_T *sup_pins)
 {
 	pins = sup_pins;
 }
 
+// return requested/actual muting status bit field
 uint16_t SUP_GetUnmuteStatusBits(void)
 {
 	return unmute_status_bits;
@@ -100,28 +104,28 @@ void SUP_Init(void)
 	midi_timeout = 0;
 	override = 0;
 	override_state = 0;
-	unmute_state = 0;
-	old_unmute_state = 0xAA;
+	requested_unmute_state = 0;
+	old_requested_unmute_state = 0xAA;
 	step = 0;
 	transition = MUTED;
 	new_transition = MUTED;
 
 	high_time = low_time = 0;
 	signal_timeout = 10;
-	mstate = 0xAA;
-	had_a_high_transition = 0;
+	returned_mstate = 0xAA;
 	active_cntr = 0;
 	inactive_cntr = 0;
 	unknown_cntr = 0;
 	unmute_status_bits = 0;
+	old_unmute_status_bits = 0xAAAA;
 }
 
 
-
+// retrigger timeout monoflop
 void SUP_MidiTrafficDetected(void)
 {
 	// set # of timeslices without traffic to raise "audio engine offline"
-	midi_timeout = 1 + (TRAFFIC_TIMEOUT / SUP_PROCCESS_TIMESLICE);
+	midi_timeout = 1 + (TRAFFIC_TIMEOUT / SUP_PROCESS_TIMESLICE);
 }
 
 
@@ -136,6 +140,7 @@ void Override_Muting(uint8_t new_unmute_state)	// effective only when enabled
 	override_state = ( new_unmute_state != 0 );
 }
 
+// function called by BB_MSG_ReceiveCallback() dispatcher
 void SUP_SetMuteOverride(uint32_t mode)
 {
 	Override_Muting(mode & SUP_UNMUTE_STATUS_SOFTWARE_VALUE);
@@ -143,38 +148,40 @@ void SUP_SetMuteOverride(uint32_t mode)
 }
 
 
-
-void SUP_Process(void)
+// determine requested mute state and signal it to the Supervisor
+// set "request" bits in status bit field
+void Transmitter(void)
 {
-// part 1 : Transmitter
+	// determine the new mute state and its status bits (except the readback bits)
 	if (midi_timeout)
 		midi_timeout--;
 
 	uint16_t bits = (unmute_status_bits & ~(SUP_UNMUTE_STATUS_HARDWARE_IS_VALID | SUP_UNMUTE_STATUS_HARDWARE_VALUE));
 	if (NL_GPIO_Get(pins->lpc_unmute_jumper) == 0)	// hardware jumper reads low (jumper set) ?
 	{
-		unmute_state = 1;							// 	-> force unmute
+		requested_unmute_state = 1;							// 	-> force unmute
 		bits |= (SUP_UNMUTE_STATUS_JUMPER_OVERRIDE | SUP_UNMUTE_STATUS_JUMPER_VALUE);
 	}
 	else if (override)								// software override ?
 	{
-		unmute_state = override_state;				//  -> use override state
+		requested_unmute_state = override_state;				//  -> use override state
 		bits |= SUP_UNMUTE_STATUS_SOFTWARE_OVERRIDE;
-		bits |= (unmute_state ? SUP_UNMUTE_STATUS_SOFTWARE_VALUE : 0);
+		bits |= (requested_unmute_state ? SUP_UNMUTE_STATUS_SOFTWARE_VALUE : 0);
 	}
 	else
 	{	// normal operation ?
-		unmute_state = (midi_timeout != 0);			//  -> unmute if midi traffic did not time out
+		requested_unmute_state = (midi_timeout != 0);			//  -> unmute if midi traffic did not time out
 		bits |= SUP_UNMUTE_STATUS_MIDI_DERIVED;
-		bits |= (unmute_state ? SUP_UNMUTE_STATUS_MIDI_DERIVED_VALUE : 0);
+		bits |= (requested_unmute_state ? SUP_UNMUTE_STATUS_MIDI_DERIVED_VALUE : 0);
 	}
 	bits |= SUP_UNMUTE_STATUS_IS_VALID;
 	unmute_status_bits = bits;
 
-	if (unmute_state != old_unmute_state)
+	// process changes of currently requested unmute state
+	if (requested_unmute_state != old_requested_unmute_state)
 	{
-		old_unmute_state = unmute_state;
-		if (unmute_state)
+		old_requested_unmute_state = requested_unmute_state;
+		if (requested_unmute_state)
 		{
 			DBG_Led_Audio_On();
 			new_transition = UNMUTED;
@@ -186,25 +193,33 @@ void SUP_Process(void)
 		}
 	}
 
+	// set signal pin according to current position in pattern cycle
 	Set_Signalling_GPIO_Pin(step < transition);
+
+	// cycle through the pattern and apply changes to pattern (but wait for one completed cycle first)
 	if (++step >= PERIOD)
 	{
 		step = 0;
 		transition=new_transition;
 	}
+}
 
-// Part 2 : Detector
-	old_mstate = mstate;
-	mstate = Get_Status_GPIO_Pin();
-	if ( mstate && (high_time < 127) )
+// detect actual mute state as returned by Supervisor
+// set returned "actual" state bits in status bit field
+void Detector(void)
+{
+	old_returned_mstate = returned_mstate;
+	returned_mstate = Get_Status_GPIO_Pin();
+
+	if ( returned_mstate && (high_time < 127) )
 		high_time++;
-	if ( !mstate && (low_time < 127) )
+	if ( !returned_mstate && (low_time < 127) )
 		low_time++;
 
-	if (mstate != old_mstate)		// pin transitioned
+	if (returned_mstate != old_returned_mstate)		// pin transitioned
 	{
 		signal_timeout = PERIOD+2;
-		if (mstate)			// pin went high, so one cycle is over
+		if (returned_mstate)			// pin went high, so one cycle is over
 		{
 			if ( (high_time == ACTIVE-1 || high_time == ACTIVE || high_time == ACTIVE+1) \
 			&&   (low_time == INACTIVE-1 || low_time == INACTIVE || low_time == INACTIVE+1) )
@@ -261,3 +276,21 @@ void SUP_Process(void)
 		unmute_status_bits &= ~SUP_UNMUTE_STATUS_HARDWARE_IS_VALID;
 	}
 }
+
+// process to be called constantly, every 10ms (resp., in "SUP_PROCCESS_TIMESLICE" intervals)
+void SUP_Process(void)
+{
+	Transmitter();
+
+	Detector();
+
+	if (unmute_status_bits != old_unmute_status_bits)
+	{	// send any changed status to BB
+		old_unmute_status_bits = unmute_status_bits;
+		if (BB_MSG_WriteMessage1Arg(BB_MSG_TYPE_MUTESTATUS, unmute_status_bits) != -1)
+			BB_MSG_SendTheBuffer();
+	}
+}
+
+// EOF
+

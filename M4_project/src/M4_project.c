@@ -168,13 +168,14 @@ void Init(void)
 
     COOS_Task_Add(SPI_BB_Polling,   30,    1);	// every 125 us, checking the buffer with messages from the BBB and driving the LPC-BB "heartbeat"
 
-    COOS_Task_Add(ADC_WORK_Init, 	60,    0);	// preparing the ADC processing (will be executed after the M0 has been initialized)
-    COOS_Task_Add(ADC_WORK_Process, 70,   100);	// every 12.5 ms, reading ADC values and applying changes
+    COOS_Task_Add(ADC_WORK_Init, 	50,    0);	// preparing the ADC processing (will be executed after the M0 has been initialized)
+    COOS_Task_Add(ADC_WORK_Process, 60,   100);	// every 12.5 ms, reading ADC values and applying changes
     COOS_Task_Add(ADC_WORK_SendBBMessages, 85,   800);	// every 100 ms, sending the results of the ADC processing to the BBB
 
-    COOS_Task_Add(MSG_CheckUSB,		105, 1600);	// every 200 ms, checking if the USB connection to the ePC or the ePC is still working
-    COOS_Task_Add(DBG_Process,      95, 4800);	// every 600 ms
-    COOS_Task_Add(SUP_Process,      55, SUP_PROCCESS_TIMESLICE*8);
+    COOS_Task_Add(MSG_CheckUSB,		70, 1600);	// every 200 ms, checking if the USB connection to the ePC or the ePC is still working
+    COOS_Task_Add(DBG_Process,      80, 4800);	// every 600 ms
+    COOS_Task_Add(SUP_Process,      90, SUP_PROCESS_TIMESLICE*8);
+    COOS_Task_Add(HBT_Process,      100, HBT_PROCESS_TIMESLICE*8);
 
     /* M0 */
     CPU_M0_Init();

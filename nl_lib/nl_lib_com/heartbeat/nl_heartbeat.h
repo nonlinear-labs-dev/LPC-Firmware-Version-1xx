@@ -12,7 +12,10 @@
 
 #include <stdint.h>
 
+// # of milliseconds between calls to handler.
+#define HBT_PROCESS_TIMESLICE	(10)
 
 void HBT_MidiReceive(uint8_t* buff, uint32_t len);
+void HBT_Process(void);
 
 #endif /* nl_heartbeat.h */

@@ -25,10 +25,11 @@
 #define BB_MSG_TYPE_EDIT_CONTROL 0x0500
 #define BB_MSG_TYPE_MORPH_POS 0x0600
 #define BB_MSG_TYPE_SETTING 0x0700
-#define BB_MSG_TYPE_NOTIFICATION 0x0800  // 2 Argumente: Notification-Typ und z.B. SW-Version
+#define BB_MSG_TYPE_NOTIFICATION 0x0800  // 2 arguments : notification type and data
 #define BB_MSG_TYPE_ASSERTION 0x0900
 #define BB_MSG_TYPE_REQUEST 0x0A00
-#define BB_MSG_TYPE_HEARTBEAT 0x0B00
+#define BB_MSG_TYPE_HEARTBEAT 0x0B00	 // 4 arguments : uint64_t data split into 4 uint16_t's
+#define BB_MSG_TYPE_MUTESTATUS 0x0C00
 
 //----- Setting Ids:
 
