@@ -56,7 +56,7 @@ void HBT_MidiReceive(uint8_t *buff, uint32_t len)
 		case 1 :	// wait for middle 14 bits
 			if ( buff[0] == 0xA1 )	// marker found
 			{
-				audio_engine_heartbeat |= ((uint64_t)buff[1] << (7*3)) | ((uint64_t)buff[2] << (7*4));
+				audio_engine_heartbeat |= ((uint64_t)buff[1] << (7*2)) | ((uint64_t)buff[2] << (7*3));
 				step = 2;
 			}
 			else
@@ -65,7 +65,7 @@ void HBT_MidiReceive(uint8_t *buff, uint32_t len)
 		case 2 :	// wait for highest 14 bits and set new heartbeat value
 			if ( (buff[0] == 0xA2) && !heartbeat_update )	// marker found and no pending transmits
 			{
-				audio_engine_heartbeat |= ((uint64_t)buff[1] << (7*5)) | ((uint64_t)buff[2] << (7*6));
+				audio_engine_heartbeat |= ((uint64_t)buff[1] << (7*4)) | ((uint64_t)buff[2] << (7*5));
 				heartbeat = audio_engine_heartbeat + lpc_heartbeat;
 				lpc_heartbeat++;
 				heartbeat_update = 1;
